@@ -164,8 +164,19 @@
               "icon": "lucide-list",
               "title": "Struttura di domande p2p"
             }
+          },
+          {
+            "id": "0d556354d0051b6d",
+            "type": "leaf",
+            "state": {
+              "type": "git-view",
+              "state": {},
+              "icon": "git-pull-request",
+              "title": "Source Control"
+            }
           }
-        ]
+        ],
+        "currentTab": 5
       }
     ],
     "direction": "horizontal",
@@ -179,7 +190,8 @@
       "daily-notes:Apri nota del giorno": false,
       "templates:Inserisci modello": false,
       "command-palette:Apri riquadro comandi": false,
-      "bases:Crea nuova Base": false
+      "bases:Crea nuova Base": false,
+      "obsidian-git:Open Git source control": false
     }
   },
   "active": "3bc6965330497a4f",
