@@ -147,7 +147,7 @@ Classico uso in bitcoin è per salvare le transazione all'interno di un blocco e
 SVP non ha tutta la blockchain scaricata a casua del poco spazio e scarica solo i block header, sfruttando un filtro di bloom per la ricerca efficace e per la privacy, e usa merkle proof per controllare se una trnasazione appartiene al blocco.
 
 -----------------------
-13. Bitcoin: proof of work, time distance between blocks, scripts.
+13. **Bitcoin: proof of work, time distance between blocks, scripts.**
 -----------------------
 14. Distances in Kademlia
 -----------------------
