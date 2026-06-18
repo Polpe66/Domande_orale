@@ -78,7 +78,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 300,
+    "collapsed": true
   },
   "right": {
     "id": "12338b9b9a262783",
@@ -196,7 +197,7 @@
   },
   "active": "3bc6965330497a4f",
   "lastOpenFiles": [
-    "MCPS_questions.md",
-    "domande p2p.md"
+    "domande p2p.md",
+    "MCPS_questions.md"
   ]
 }

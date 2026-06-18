@@ -95,7 +95,7 @@ Tipicamente ad anello circolare come in Chord oppure ad albero come in Kademlia
 
 
 -----------------------
-### Come funziona Chord?
+6. **Come funziona Chord?**
 
 Chord è una DHT che mappa nodi e chiavi in uno spazio circolare. Sappiamo che il numero di indici è maggiore del numero dei  nodi e vanno, ad esempio, da $0$ a $m$. Si costruisce una struttura circolare con $m$ indici e, a seguito, si cominciano a mappare i nodi nello spazio di indirizzamento. È importante dire che le chiavi verranno mappate all'interno del nodo se l'output coincide con l'indice del nodo, oppure al prossimo primo nodo disponibile. Importante è la funzione `succ()`, che gira in senso orario trovando il primo nodo disponibile. 
 
@@ -117,14 +117,49 @@ Le caratteristiche principali dell'hash crittografico sono:
 - **Hiding**: dato un dato r a alta min entropia e un risultato risulta impossibile ricavare informazioni su x concatenato con r che hashato produce l'output
 - **Effetto valanga**: il minimo cambiamento dell'input rende l'output totalmente diverso.
 -----------------------
-9. Qual è la regola utilizzata da Kademlia per mappare oggetti e nodi? Come sono fatte le tabelle di Kademlia?
+8. **Qual è la regola utilizzata da Kademlia per mappare oggetti e nodi? Come sono fatte le tabelle di Kademlia?**
+
+Kademlia rappresenta un'applicazione di overlay strutturato che si distingue da Chord grazie alla possibilità di avere parallel routing, un'aggiornamento automatico con il lookup e lo XOR. Inoltre, invece di avere una struttura ad anello, utilizza una struttura a **TRIE binario**. 
+
+Essendo una DHT (*Distributed Hash Table*) con *consistent hashing*, nodi e chiavi sono mappati nello stesso spazio di indirizzamento; quindi, per creare il TRIE basta posizionare un albero binario completo con gli indici e, a seguito, mappare i nodi con il loro hash. 
+
+Dopo aver fatto questo risulta possibile mappare le chiavi: siamo nella situazione in cui la chiave viene assegnata al nodo con il prefisso comune più lungo (*lowest common anchestor*). In caso di pareggio, si guarda come spareggio il bit che differisce tra i prefissi dei due nodi e si sceglie quello che ha il bit in comune con la chiave. 
+
+Questa tecnica, in caso di ricerca di nodi vicini alle chiavi, permette di eseguire due approcci: una ricerca *brute force* dei nodi, oppure una ricerca tramite lo XOR. L'operatore **XOR** permette di calcolare la distanza logica fra due identificatori; questa non è una distanza geografica, ma una distanza metrica determinata dalla dislocazione dei nodi all'interno dell'albero. XOR è simmetrica d(x,y) = d(y,x).
+
+All'interno di ogni nodo abbiamo delle routing table divise in M segmenti, denominate **k-bucket**, che contengono distanze $$[2^{i-1}, 2^i)$$ Ogni k-bucket contiene k contatti (ID, IP, porta UDP), ordinati in base all'ultima visualizzazione e grazie ai k-bucket ho la possibilità di avvicinarmi di un bit ad ogni passo.
+
+I nodi vecchi vengono preferiti ai nuovi, poichè statisticamente risultano più affidabili.
+
+Come anticipato con Kademlia abbiamo routing parallelo e l'interazione parallela e iterativa termian quando non si ricevono conoscenza migliori rispetto alle precedenti. O(log n).
+
+	Primitive  UDP: PING, STORE, FIND_NODE, FIND_VALUE
+
+- Join: con bootstrap node e interrogando se stessi e a seguito vicini sempre più lontani in modo da riempire le k-bucket.
+- Store: Si inserisce il valore associato alla chiave tramite STORE ai k nodi con ID più vicini, serve refresh periodico, perchè i dati sono soft state.
+- Leave: se un nodo abbandona, la k-bucket viene silenziosamente dismessa, senza dover fare nulla.
+
 -----------------------
-10. Bitcoin: Cos'è un escrow?
+9. **Bitcoin: Cos'è un escrow?**
+L'escrow rappresenta una situazione in cui ci sono due attori che vogliono fare uno scambio (ad esempio denaro-bene) in un ambiente non fidato; per fare ciò si affidano ad una terza persona che è onesta e fidata, che faccia da giudice. Questa situazione può avvenire anche in Bitcoin ed è fattibile grazie agli indirizzi multisig. Gli indirizzi multisig, detti multifirma, sono fondi che possono essere bloccati e mossi al raggiungimento di M su N firme richieste, situazione tipica dei conti cointestati 2-di-2.
+
+Il funzionamento dell'escrow è spiegabile col seguente esempio: Alice vuole comprare un libro da Bob e Judy fa da giudice.
+
+Viene creato un indirizzo multifirma 2-di-3 in cui Alice crea e pubblica una funding transaction. A seguito, possono accadere 3 situazioni:
+- Alice riceve il libro spedito da Bob, tutto è andato bene: Alice e Bob firmano la tx e Bob riceve i soldi.
+- Alice riceve il libro ma non vuole pagare: in questa situazione Bob e Judy firmano, così i fondi vanno a Bob.
+- Alice non riceve il libro e in questo momento i soldi sono fermi: Alice e Judy firmano per poter far riottenere i soldi ad Alice.
+
+Tutto questo è possibile solo se Judy è fidata e non ha comportamenti bizantini.
+
 -----------------------
-11. **Cos'è un consistent hashing?**
+10. **Cos'è un consistent hashing?**
 **Consistent hashing**, che si basa sul mappare nodi e chiavi sullo stesso spazio di indirizzamento in modo che in caso di rehashing non dobbiamo mappare il 99% ma $K/N$, in cui $K$ è il numero di chiavi e $N$ il numero di nodi.
+
+Si differenzia dall'hashing normale proprio per il numero di chiavi rimappate.
+
 -----------------------
-12. **Cos'è il Merkle Tree? Quando si usa il Merkle Tree Root e una Merkle Proof in Bitcoin? Voleva sapere degli SPV nodes, i light client.**
+11. **Cos'è il Merkle Tree? Quando si usa il Merkle Tree Root e una Merkle Proof in Bitcoin? Voleva sapere degli SPV nodes, i light client.**
 Struttura dati ad albero basata su hash crittografico che permette di essere *tamper-evident* (a prova di manomissione).
 
 Esempio di salvare dati sul cloud e controllare che siano originali:
@@ -147,17 +182,49 @@ Classico uso in bitcoin è per salvare le transazione all'interno di un blocco e
 SVP non ha tutta la blockchain scaricata a casua del poco spazio e scarica solo i block header, sfruttando un filtro di bloom per la ricerca efficace e per la privacy, e usa merkle proof per controllare se una trnasazione appartiene al blocco.
 
 -----------------------
-13. **Bitcoin: proof of work, time distance between blocks, scripts.**
+12. **Bitcoin: proof of work, time distance between blocks, scripts.**
+
+Bitcoin basa il suo consenso sulla PoW, basata sulla forza computazionale e non sullo stake come in Ethereum. Il funzionamento è il seguente: si effettua un doppio hash SHA-256 del block header e del *nonce* (con il *nonce* che è una variabile casuale), finché non otteniamo un hash che rientra al di sotto di un target, definito *difficulty target*.
+
+La prova è elegante perché, grazie al principio di *puzzle friendliness*, non è possibile ottenere una soluzione con scorciatoie; si può vincere la PoW solo con una computazione *brute force* (nel 2015 sono stati stimati circa $2^{70}$ tentativi richiesti). A seguito della PoW è possibile essere selezionati per proporre un blocco.
+
+La difficoltà del target può essere aggiustata con il fine di mantenere il *block rate* a ogni 10 minuti (effetuando tuning della difficoltà ogni 2016 blocchi); questa scelta non è casuale, permette di evitare la creazione di troppi fork, situazione che comunque avviene e mina momentaneamente la consistenza della chain.
+
+I Bitcoin sono prefissati a 21.000.000 e finiranno nel 2140; la pressione deflazionistica è garantita dal dimezzamento delle fee guadagnate dalla creazione del blocco ogni 4 anni.
+
+Il block header è composto da: Merkle root, puntatore all'hash del blocco precedente, version, timestamp, nonce, difficoltà del target. 
+
+Detto questo, la transazione è composta da: version, input (script di sblocco, lista utxo), output (satoshi e script di blocco).
+
+Gli script rappresentano una parte interessante di Bitcoin; sono scritti in un linguaggio *Forth-like* non Turing completo e *stack-based*, senza uno stato persistente e con totale assenza di cicli.
+
+Lo script di blocco rappresenta il destinatario della tx, poiché indica le condizioni di sblocco per muovere e spendere in una tx successiva quell'UTXO.
+
+Ne esistono di diversi tipi: P2PK, P2PKH, P2SH e quelli SegWit. Lo scipt di sblocco è la prova fornita dal destinatario per poter muovere i fondi.
+
 -----------------------
-14. Distances in Kademlia
+13. **What is the biggest difference between Ethereum and Bitcoin?** 
+Le più grandi differenze tra i due sono il fatto che Bitcoin sia semplicemente un *ledger* distribuito, invece Ethereum condivide pure la computazione, quindi è un vero e proprio computer distribuito. Questo porta ad una gestione diversa dei servizi, poiché avendo a disposizione una EVM è possibile fare diverse cose grazie anche a Solidity, che rappresenta un linguaggio Turing completo. L'ecosistema Ethereum fornisce persistenza dello stato, cosa che Bitcoin non ha. A livello di astrazione possiamo immaginarci Bitcoin come una macchina a stati con uno stato che viene modificato da una transazione; invece, con Ethereum abbiamo uno stato globale persistente composto da contratti e transazioni, che può essere modificato dalle transazioni, con l'uso di questo potente strumento detto EVM. Inoltre ethereum è account based, invece bitcoin è utxo based. Bitcoin ha un overlay nons trutturato e ehtreum è strutturato, il consenso è diverso PoS e PoW
 -----------------------
-15. What is the biggest difference between Ethereum and Bitcoin? (according to me, Solidity)
------------------------
-16. **Blockchain trilemma**
+14. **Blockchain trilemma**
 Indica la difficiltà di ottenere all'intero di una blockchain tutte e tre le proprietà, al massimo due. Scalabilità, sicurezza e decentralizzazione.
 -----------------------
-17. What are some ways to solve scalability in Bitcoin and Ethereum?(talked about the lightning network, block size, time intervals)  What is Ethereum Rollup?
+15. What are some ways to solve scalability in Bitcoin and Ethereum?(talked about the lightning network, block size, time intervals) 
+Sappiamo che la scalabilità rappresenta un problema, come specificato anche nel trilemma della blockchain; la soluzione risulta modificare qualche caratteristica per cercare di migliorare la situazione. Un tipico esempio è la Lightning Network, che consiste nel limitare le tx on-chain e registrare semplicemente l'apertura di un canale e la chiusura, non registrando le transazioni intermedie.  
+
+Aumentare il *block size* non rappresenta una soluzione ottimale poiché è stimato che, per raggiungere la scalabilità di Visa, servirebbero blocchi da 8 GB e questo, inevitabilmente, creerebbe centralizzazione. Segwit ha aumentato di poco il block size.
+Dal lato di Ethereum abbiamo un *block rate* migliore (un blocco ogni slot di 12 secondi), ma persiste il fatto che non si può raggiungere una scalabilità tale da competere con altri canali di pagamento tradizionali.
+
+
+
 -----------------------
-18. How are data organized in Ethereum? What is the structure of the Merkle Patricia Trie.
+16. How are data organized in Ethereum? What is the structure of the Merkle Patricia Trie.
+Per quanto riguarda il livello data link, Ethereum dispone di 4 strutture dati fondamentali:
+
+* **World State Trie**: rappresenta il trie che contiene il riferimento a ciascun account (EOA o contratto); contiene balance, nonce, hashcode (in caso di bytecode del contratto) e storageRoot (account storage trie).
+* **Account storage trie:**  trie che mantiene lo stato di storage dello smart contract (in caso di EOA è vuoto).
+* **Receipt Trie**: contiene tutte le ricevute delle tx, con cui si forma un log e un log bloom per favorire ricerche efficienti su parametri di filtraggio; rappresenta un punto di contatto tra on-chain e off-chain, cosa che in Bitcoin è assente.
+* **Transaction Trie**: contiene il trie con tutte le tx, utile per trovare la validità di una tx tramite Merkle proof.
+Il **Merkle Patricia Trie** è questo trie maggiormente economico rispetto al trie classico, che è composto da un bit per arco. Qua abbiamo un raggruppamento di prefissi simili e, a seguito, viene effettuato l'hash. Abbiamo diversi nodi importanti: il nodo foglia (leaf node), che rappresenta il contenuto; il nodo che rappresenta l'arco (extension node) e quindi i prefissi comuni; e il nodo che permette di ramificare (branch node). L'informazione viene divisa in nibble per avere maggiore granularità
 -----------------------
 
