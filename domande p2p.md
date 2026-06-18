@@ -66,7 +66,7 @@ Gli attacchi possibili su Bitcoin sono: Eclipse attack, Sybil attack e Double sp
 * **Sybil attack:** si intende che l'attaccante crea identità fittizie per acquisire il possesso della rete. Questo tipo di attacco risulta efficiente in contesti dove, per ottenere consistenza sui dati fra i nodi distribuiti, si usano algoritmi di voto come consenso, dove avere più entità effettivamente porta un vantaggio. In Bitcoin, però, questa situazione è scongiurata grazie al fatto che ci si basa sulla potenza computazionale e non sulla presenza. Questo permette di collegarci direttamente all'attacco di double spending, che risulta statisticamente possibile ma improbabile.
 
 * **Double spending:** in questa situazione un attaccante tenta di spendere la stessa moneta due volte. Una soluzione *naive* risulta mandare due transazioni differenti, che spendono lo stesso UTXO, a due nodi diversi e sperare che vengano registrate nella blockchain. Sappiamo che risulta impossibile poiché, a seguito di una transazione, questa viene mandata in broadcast ai nodi miner, che la validano nell'UTXO set controllando la validità delle firme e se $\sum \text{Input} \ge \sum \text{Output}$. A seguito di ciò, la transazione viene messa nella mempool che scarta tutti i doppioni; in questa situazione sicuramente non è possibile perpetrare un double spending attack. Rimane una possibilità se un attaccante spende la moneta che viene registrata sulla catena canonica, ma in modalità *stealth* prosegue una fork malevola in cui la transazione non è riportata. Questo diventa pericoloso se la fork malevola supera la catena canonica, in modo che venga applicata la *longest chain rule* e la catena canonica diventi orfana. Questo, come detto, è statisticamente possibile ma computazionalmente impossibile, poiché l'attaccante dovrebbe riuscire ad avere una forza computazionale tale da superare la catena canonica, e diventa possibile solo quando la forza computazionale posseduta diventa il 51% della forza computazionale totale. Questo non è mai accaduto, anche se nel 2014 una mining pool ha ottenuto il 38% scatenando una grande confusione nella community e creando anche danni economici. Tuttavia, l'attacco non è avvenuto, poiché Bitcoin ha un meccanismo che permette di favorire chi è onesto; questo indica che sovvertire le regole non porta a nessun maggiore guadagno economico rispetto a seguirle, e per questo i nodi rimangono onesti.
-* * **Transaction malleability:** attacco che sfrutta una particolarità della firma ECDSA, in cui una transazione firmata risulta valida sia con gli attributi originali della firma (r, s), sia a causa della natura delle curve ellittiche con (r, n-s). Questo viene sfruttato per modificare l'ID della transazione (TxID), che è l'hash della transazione lasciando tutti gli altri campi uguali e alterando solo i parametri della firma senza invalidarla.
+* **Transaction malleability**: attacco che sfrutta una particolarità della firma ECDSA, in cui una transazione firmata risulta valida sia con gli attributi originali della firma (r, s), sia a causa della natura delle curve ellittiche con (r, n-s). Questo viene sfruttato per modificare l'ID della transazione (TxID), che è l'hash della transazione lasciando tutti gli altri campi uguali e alterando solo i parametri della firma senza invalidarla.
   Classico esempio: Alice manda 1 BTC a Bob con ID della transazione 1234. Bob, prima che la transazione venga registrata on-chain, effettua l'attacco e genera la stessa transazione, ma con i parametri della firma contraffatti, ottenendo un nuovo ID (es. 5678).
    A questo punto possono avvenire due situazioni: se viene registrata la prima transazione (1234), l'attacco fallisce; se invece si registra prima la transazione con ID 5678, il destinatario (Bob) può affermare di non aver mai ricevuto i fondi. Il mittente (Alice) cercherà di mostrare la ricevuta della transazione con ID 1234, che non mai stata registrata. La rete scarta sempre  una delle due poiché si renderà conto che sono un duplicato (stessi input spesi).
    *Soluzione:* Questo attacco è stato risolto con l'aggiornamento **SegWit** (Segregated Witness), che sposta i parametri della firma ECDSA all'interno del campo *witness*, il quale non viene utilizzato nel calcolo dell'hash per generare l'ID della transazione.
@@ -74,6 +74,7 @@ Gli attacchi possibili su Bitcoin sono: Eclipse attack, Sybil attack e Double sp
 * **DNS poisoning:** se un attaccante riesce a manomettere il DNS, ovviamente può forzare un nuovo nodo a connettersi esclusivamente a nodi malevoli (facilitando, ad esempio, un Eclipse attack).
 
 * **Network listening:** lo sniffing del traffico di rete, che però risulta inefficace grazie alla cifratura odierna.
+
 -----------------------
 5. **Distributed hash table: qual è la differenza tra un hash crittografico e un consistent hashing? Tre caratteristiche importanti dell'hash crittografico.**
 Parliamo di overlay strutturati, che prendono il meglio dagli overlay centralizzati (ovvero capacità di avere lookup certi e scalabilità nelle query) e dalle reti non strutturate (da cui prendono la resistenza al churn e la decentralizzazione). Questo porta ad un lookup in $O(\log N)$ e uno spazio per le tabelle di routing occupato in $O(\log N)$.
@@ -105,7 +106,6 @@ La problematica di questo approccio, senza alcuna struttura dati aggiuntiva, è 
 $$\text{succ}(n + 2^{i-1})$$In questo modo, con $i$ che va da $1$ a $m$, avrò puntatori a $\text{succ}(n+1)$, $\text{succ}(n+2)$, $\text{succ}(n+4)$... In questo modo il costo di lookup cala a $O(\log N)$.
 
 -----------------------
-
 7. **Quali sono le caratteristiche di un hash crittografico? Non-invertibilità, collision resistance.**
 Le caratteristiche principali dell'hash crittografico sono:
 - **Determinismo**
@@ -116,6 +116,7 @@ Le caratteristiche principali dell'hash crittografico sono:
 - **Puzzle friendliness**:  il fatto che per trovare un valore che, accoppiato con un valore noto, produca un certo output (principio fondante della PoW) non abbia scorciatoie, ma richieda una computazione completa e pesante.
 - **Hiding**: dato un dato r a alta min entropia e un risultato risulta impossibile ricavare informazioni su x concatenato con r che hashato produce l'output
 - **Effetto valanga**: il minimo cambiamento dell'input rende l'output totalmente diverso.
+
 -----------------------
 8. **Qual è la regola utilizzata da Kademlia per mappare oggetti e nodi? Come sono fatte le tabelle di Kademlia?**
 
@@ -123,7 +124,7 @@ Kademlia rappresenta un'applicazione di overlay strutturato che si distingue da 
 
 Essendo una DHT (*Distributed Hash Table*) con *consistent hashing*, nodi e chiavi sono mappati nello stesso spazio di indirizzamento; quindi, per creare il TRIE basta posizionare un albero binario completo con gli indici e, a seguito, mappare i nodi con il loro hash. 
 
-Dopo aver fatto questo risulta possibile mappare le chiavi: siamo nella situazione in cui la chiave viene assegnata al nodo con il prefisso comune più lungo (*lowest common anchestor*). In caso di pareggio, si guarda come spareggio il bit che differisce tra i prefissi dei due nodi e si sceglie quello che ha il bit in comune con la chiave. 
+Dopo aver fatto questo risulta possibile mappare le chiavi: siamo nella situazione in cui la chiave viene assegnata al nodo con il prefisso comune più lungo (*lowest common ancestor*). In caso di pareggio, si guarda come spareggio il bit che differisce tra i prefissi dei due nodi e si sceglie quello che ha il bit in comune con la chiave. 
 
 Questa tecnica, in caso di ricerca di nodi vicini alle chiavi, permette di eseguire due approcci: una ricerca *brute force* dei nodi, oppure una ricerca tramite lo XOR. L'operatore **XOR** permette di calcolare la distanza logica fra due identificatori; questa non è una distanza geografica, ma una distanza metrica determinata dalla dislocazione dei nodi all'interno dell'albero. XOR è simmetrica d(x,y) = d(y,x).
 
@@ -131,7 +132,7 @@ All'interno di ogni nodo abbiamo delle routing table divise in M segmenti, denom
 
 I nodi vecchi vengono preferiti ai nuovi, poichè statisticamente risultano più affidabili.
 
-Come anticipato con Kademlia abbiamo routing parallelo e l'interazione parallela e iterativa termian quando non si ricevono conoscenza migliori rispetto alle precedenti. O(log n).
+Come anticipato con Kademlia abbiamo routing parallelo e l'interazione parallela e iterativa termina quando non si ricevono conoscenza migliori rispetto alle precedenti. O(log n).
 
 	Primitive  UDP: PING, STORE, FIND_NODE, FIND_VALUE
 
@@ -173,13 +174,13 @@ Questo ci permette di fare la Merkle proof, che consiste nel chiedere un dato di
 
 La proof di non inclusività consiste nel testare mettendo in ordine un dato e testandolo con il dato a sx e a dx; se non appartiene, ovviamente la nuova radice è differente dalla vecchia.
 
-Classico uso in bitcoin è per salvare le transazione all'interno di un blocco e oppure nel csaso degli svp client 
+Classico uso in bitcoin è per salvare le transazione all'interno di un blocco e oppure nel caso degli spv client 
 . Infatti ci sono diversi attori che partecipano a bitocoin: 
 - Bitcoin core: wallet, mining, blockchain completa e routing P2P
-- Full node: blockachian compelta e routing P2P
-- Solo miner: minign, blockchain completa e routing P2P
-- SVP wallet: wallet e routing P2P
-SVP non ha tutta la blockchain scaricata a casua del poco spazio e scarica solo i block header, sfruttando un filtro di bloom per la ricerca efficace e per la privacy, e usa merkle proof per controllare se una trnasazione appartiene al blocco.
+- Full node: blockchain completa e routing P2P
+- Solo miner: mining, blockchain completa e routing P2P
+- SPV wallet: wallet e routing P2P
+SPV non ha tutta la blockchain scaricata a casua del poco spazio e scarica solo i block header, sfruttando un filtro di bloom per la ricerca efficace e per la privacy, e usa merkle proof per controllare se una transazione appartiene al blocco.
 
 -----------------------
 12. **Bitcoin: proof of work, time distance between blocks, scripts.**
@@ -190,7 +191,7 @@ La prova è elegante perché, grazie al principio di *puzzle friendliness*, non 
 
 La difficoltà del target può essere aggiustata con il fine di mantenere il *block rate* a ogni 10 minuti (effetuando tuning della difficoltà ogni 2016 blocchi); questa scelta non è casuale, permette di evitare la creazione di troppi fork, situazione che comunque avviene e mina momentaneamente la consistenza della chain.
 
-I Bitcoin sono prefissati a 21.000.000 e finiranno nel 2140; la pressione deflazionistica è garantita dal dimezzamento delle fee guadagnate dalla creazione del blocco ogni 4 anni.
+I Bitcoin sono prefissati a 21.000.000 e finiranno nel 2140; la pressione deflazionistica è garantita dal dimezzamento dellericompense guadagnate dalla creazione del blocco ogni 4 anni.
 
 Il block header è composto da: Merkle root, puntatore all'hash del blocco precedente, version, timestamp, nonce, difficoltà del target. 
 
@@ -205,17 +206,17 @@ Ne esistono di diversi tipi: P2PK, P2PKH, P2SH e quelli SegWit. Lo scipt di sblo
 -----------------------
 13. **What is the biggest difference between Ethereum and Bitcoin?** 
 Le più grandi differenze tra i due sono il fatto che Bitcoin sia semplicemente un *ledger* distribuito, invece Ethereum condivide pure la computazione, quindi è un vero e proprio computer distribuito. Questo porta ad una gestione diversa dei servizi, poiché avendo a disposizione una EVM è possibile fare diverse cose grazie anche a Solidity, che rappresenta un linguaggio Turing completo. L'ecosistema Ethereum fornisce persistenza dello stato, cosa che Bitcoin non ha. A livello di astrazione possiamo immaginarci Bitcoin come una macchina a stati con uno stato che viene modificato da una transazione; invece, con Ethereum abbiamo uno stato globale persistente composto da contratti e transazioni, che può essere modificato dalle transazioni, con l'uso di questo potente strumento detto EVM. Inoltre ethereum è account based, invece bitcoin è utxo based. Bitcoin ha un overlay nons trutturato e ehtreum è strutturato, il consenso è diverso PoS e PoW
+
 -----------------------
 14. **Blockchain trilemma**
 Indica la difficiltà di ottenere all'intero di una blockchain tutte e tre le proprietà, al massimo due. Scalabilità, sicurezza e decentralizzazione.
+
 -----------------------
 15. **What are some ways to solve scalability in Bitcoin and Ethereum?(talked about the lightning network, block size, time intervals)** 
 Sappiamo che la scalabilità rappresenta un problema, come specificato anche nel trilemma della blockchain; la soluzione risulta modificare qualche caratteristica per cercare di migliorare la situazione. Un tipico esempio è la Lightning Network, che consiste nel limitare le tx on-chain e registrare semplicemente l'apertura di un canale e la chiusura, non registrando le transazioni intermedie.  
 
 Aumentare il *block size* non rappresenta una soluzione ottimale poiché è stimato che, per raggiungere la scalabilità di Visa, servirebbero blocchi da 8 GB e questo, inevitabilmente, creerebbe centralizzazione. Segwit ha aumentato di poco il block size.
 Dal lato di Ethereum abbiamo un *block rate* migliore (un blocco ogni slot di 12 secondi), ma persiste il fatto che non si può raggiungere una scalabilità tale da competere con altri canali di pagamento tradizionali.
-
-
 
 -----------------------
 16. **How are data organized in Ethereum? What is the structure of the Merkle Patricia Trie.**
