@@ -209,7 +209,7 @@ Le più grandi differenze tra i due sono il fatto che Bitcoin sia semplicemente 
 14. **Blockchain trilemma**
 Indica la difficiltà di ottenere all'intero di una blockchain tutte e tre le proprietà, al massimo due. Scalabilità, sicurezza e decentralizzazione.
 -----------------------
-15. What are some ways to solve scalability in Bitcoin and Ethereum?(talked about the lightning network, block size, time intervals) 
+15. **What are some ways to solve scalability in Bitcoin and Ethereum?(talked about the lightning network, block size, time intervals)** 
 Sappiamo che la scalabilità rappresenta un problema, come specificato anche nel trilemma della blockchain; la soluzione risulta modificare qualche caratteristica per cercare di migliorare la situazione. Un tipico esempio è la Lightning Network, che consiste nel limitare le tx on-chain e registrare semplicemente l'apertura di un canale e la chiusura, non registrando le transazioni intermedie.  
 
 Aumentare il *block size* non rappresenta una soluzione ottimale poiché è stimato che, per raggiungere la scalabilità di Visa, servirebbero blocchi da 8 GB e questo, inevitabilmente, creerebbe centralizzazione. Segwit ha aumentato di poco il block size.
@@ -218,7 +218,7 @@ Dal lato di Ethereum abbiamo un *block rate* migliore (un blocco ogni slot di 12
 
 
 -----------------------
-16. How are data organized in Ethereum? What is the structure of the Merkle Patricia Trie.
+16. **How are data organized in Ethereum? What is the structure of the Merkle Patricia Trie.**
 Per quanto riguarda il livello data link, Ethereum dispone di 4 strutture dati fondamentali:
 
 * **World State Trie**: rappresenta il trie che contiene il riferimento a ciascun account (EOA o contratto); contiene balance, nonce, hashcode (in caso di bytecode del contratto) e storageRoot (account storage trie).
