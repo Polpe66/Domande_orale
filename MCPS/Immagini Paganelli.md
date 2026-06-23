@@ -1,7 +1,24 @@
 
 
 
+# Reti wireless
+![[Pasted image 20260623162111.png]]
+Il problema del **Terminale Nascosto** (Hidden Terminal) si verifica a causa di limitazioni fisiche intrinseche della propagazione radio, dovute principalmente a due fattori: il **path loss** (attenuazione legata alla distanza) o la presenza di **ostacoli fisici**.
 
+Path loss p formalizzabile come $1/(fd)^n$. Tipicamente n=2 nel vuoto
+
+Come illustrato nell'immagine, si possono distinguere due scenari:
+1. **Terminale nascosto per Path Loss (Scenario a):** Il nodo A rientra nel raggio di copertura di B (e viceversa), e lo stesso vale per B e C. Tuttavia, a causa dell'eccessiva distanza tra A e C, il segnale si attenua (path loss) al punto che A e C non riescono a percepirsi reciprocamente.
+2. **Terminale nascosto per Ostacoli (Scenario b):** A e C sarebbero teoricamente abbastanza vicini da potersi sentire, ma un oggetto fisico interposto tra loro (es. un muro o una montagna) blocca completamente la comunicazione diretta.
+
+**La conseguenza (La Collisione):**
+In entrambi i casi, la dinamica distruttiva è la medesima. Se A sta già trasmettendo dati a B, il nodo C (non potendo sentire A) dedurrà erroneamente che il canale sia libero. Iniziando la sua trasmissione verso B, i segnali di A e di C si andranno a sovrapporre fisicamente sull'antenna del nodo B, creando una **collisione catastrofica** che rende il messaggio incomprensibile.
+
+**Il fallimento dei protocolli classici:**
+In questo scenario, i protocolli tradizionali basati sul semplice ascolto del canale (Carrier Sense), come il CSMA classico o il CSMA/CD delle reti cablate, **falliscono miseramente**. Il motivo logico è che l'ascolto viene effettuato dal *trasmettitore* (C), ma la collisione avviene al *ricevitore* (B). 
+Nelle reti wireless (come il Wi-Fi 802.11), questo problema viene risolto implementando il protocollo **CSMA/CA** affiancato dallo scambio di pacchetti di controllo **RTS/CTS** 
+(Request to Send / Clear to Send), che prenota esplicitamente il canale attorno al ricevitore.
+![[Pasted image 20260623170214.png]]
 
 # FOURIER
 ![[Pasted image 20260623094401.png]]
