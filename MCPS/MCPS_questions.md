@@ -90,6 +90,34 @@
 * **Limitazioni di OpenFlow e superamento con P4:** Quali sono i limiti di OpenFlow e perché è stato superato da P4?
   * *Risposta:* OpenFlow è vincolato ai protocolli di rete standard; le sue tabelle di match funzionano solo su header predefiniti (es. IPv4, TCP). **P4** (Programming Protocol-independent Packet Processors) supera questo limite rendendo il data plane completamente programmabile: permette di definire il parsing di pacchetti custom e protocolli proprietari non ancora inventati, dicendo allo switch *come* estrarre e processare i campi.
 * **Applicazione Reale:** Esempio SDN (Google B4).
+*  **In che modo il forwarding generalizzato differisce dal forwarding basato sulla destinazione?**                                                                                                                                             
+     Risposta: Il destination-based forwarding tradizionale decide l'instradamento basandosi solo sull'indirizzo IP di destinazione. Il                                                 
+     forwarding generalizzato (SDN/OpenFlow) generalizza radicalmente questo concetto con l'astrazione match+action: può usare qualsiasi                                                
+     campo dell'header (L2: MAC, L3: IP sorgente/destinazione, protocollo, ToS; L4: porte TCP/UDP) come chiave di match, e le azioni non si                                             
+     limitano a forward ma includono anche drop, modify (es. NAT, VLAN rewriting) e send to controller. Permette inoltre il routing per-                                                
+     flusso (regole diverse per flussi diversi), impossibile nel routing destination-based classico. 
+-  **Cosa si intende per operazione match-action di un router o switch? Nel caso del destination-based forwarding, cosa viene confrontato e quale azione viene eseguita?**                                                                                                                                                  
+     Match-action è l'astrazione fondamentale di SDN/OpenFlow: un pacchetto arriva allo switch → viene confrontato con le voci della flow table (match) su uno o più campi dell'header (MAC, IP, ToS, protocollo, porte TCP/UDP) → se c'è corrispondenza, viene eseguita                                                     
+     l'azione associata:       
+     - forward: inoltra su una porta                                 
+     - drop: scarta            
+     - modify: modifica header (NAT, VLAN)                                   
+     - send to controller: invia al controller                                                                                                                                                                                                               
+     Destination-based forwarding è un caso particolare:                      
+     - Match: solo l'indirizzo IP di destinazione                                       
+     - Azione: forward sulla porta della route più specifica 
+- **Nel caso del forwarding generalizzato in SDN, cita tre campi che possono essere confrontati (match) e tre azioni che possono essere eseguite.**                                                                                                                                                                                                                                    
+     Tre campi matchable:                              
+     1. Indirizzo MAC (sorgente/destinazione) — L2                                               
+     2. Indirizzo IP (sorgente/destinazione) — L3                                            
+     3. Porta TCP/UDP (sorgente/destinazione) — L4         
+     
+     Altri possibili: protocollo IP, ToS/DSCP, VLAN ID.                                                                                                                             
+     Tre azioni:                          
+     1. forward: invia il pacchetto su una porta specifica                                                     
+     2. drop: scarta il pacchetto                            
+     3. modify: modifica campi dell'header (es. NAT, VLAN rewriting)                                                           
+     Altre: send to controller (invia al controller per decisione centralizzata).
 
 ### 4. Teoria dei Segnali (Domanda Fissa)
 * **Serie di Fourier:** Scrivi la formula di s(t) e dei coefficienti, spiegando a cosa serve.
