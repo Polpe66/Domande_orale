@@ -28,7 +28,7 @@
               "type": "markdown",
               "state": {
                 "file": "MCPS/MCPS_questions.md",
-                "mode": "source",
+                "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
@@ -223,10 +223,13 @@
   },
   "active": "04304ddfbce490e2",
   "lastOpenFiles": [
-    "MCPS/Immagini Paganelli.md",
-    "MCPS/MCPS_questions.md",
-    "MCPS/images/Pasted image 20260623170214.png",
+    "MCPS/images/Pasted image 20260623183835.png",
     "MCPS/Questions for the oral exam 2023_module2.pdf",
+    "MCPS/Immagini Paganelli.md",
+    "MCPS/images/Pasted image 20260623181841.png",
+    "MCPS/MCPS_questions.md",
+    "MCPS/images/Pasted image 20260623175329.png",
+    "MCPS/images/Pasted image 20260623170214.png",
     "MCPS/images/Pasted image 20260623162111.png",
     "MCPS/images/Pasted image 20260623113804.png",
     "MCPS/images/Pasted image 20260623111943.png",
@@ -235,7 +238,6 @@
     "MCPS/images/Pasted image 20260623094401.png",
     "MCPS/images",
     "MCPS/Pasted image 20260623094325.png",
-    "Pasted image 20260623094118.png",
     "domande p2p.md",
     "MCPS/Esame Paganelli.pdf",
     "MCPS/build/appunti.md",
@@ -264,7 +266,6 @@
     "MCPS/build/md/Lezione 19 - Caso studio Tartarughe.md",
     "MCPS/build/md/Lezione 18 - The IEEE 802.15.4 Standard.md",
     "MCPS/build/md",
-    "MCPS/build/images/mermaid-lezione-7-lab-mobile-networks-06.png",
     "MCPS/build/images",
     "MCPS/build/extract_images.py",
     "MCPS/build/concat.py"
