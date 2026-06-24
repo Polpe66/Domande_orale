@@ -98,9 +98,22 @@
 
 ### 3. Software Defined Networking (SDN) & OpenFlow
 * **Generalized Forwarding:** Spiega lo schema OpenFlow (con l'header del pacchetto) partendo dal concetto di *generalized forwarding*.
-  * *Risposta:* Nel routing tradizionale si inoltra in base all'IP di destinazione. Nel *generalized forwarding* di SDN, gli switch usano tabelle "Match-Action". Il "match" può essere fatto su molteplici campi dell'header del pacchetto (MAC address, IP sorgente/destinazione, porte TCP/UDP, ecc.), permettendo azioni complesse (inoltra, droppa, modifica).
+	Nel routing tradizionale si inoltra in base all'IP di destinazione. Nel generalized forwarding di SDN, gli switch usano tabelle "Match-Action". Il "match" può essere fatto su molteplici campi dell'header del pacchetto (MAC address, IP sorgente/destinazione, porte TCP/UDP, ecc.), permettendo azioni complesse (inoltra, droppa, modifica, invia al controller)
+	
+---
 * **Architettura SDN:** Descrivi Control Plane, Data Plane, Application Plane e API (Southbound/Northbound).
+	L'architettura SDN si struttura su tre livelli fondamentali e indipendenti:
+	
+	Data Plane (Piano Dati): È composto da switch semplici e veloci, il cui unico compito è inoltrare meccanicamente i pacchetti. Non possiedono alcuna logica di routing interna, ma si limitano ad applicare le regole di *forwarding* (match-action) dettate dalle *flow table* fornitegli dal livello superiore.
+	
+	Control Plane (Piano di Controllo): Rappresenta il coordinatore logicamente centralizzato della rete. Comunica verso il basso (con gli switch del Data Plane) tramite le **Southbound API**, utilizzando protocolli standard come OpenFlow. Comunica invece verso l'alto (con il livello applicativo) tramite le **Northbound API**. Ovviamente il controllo risulta distribuito in modo da avere fault tollerance e resilienza.
+	
+	Application Plane (Piano Applicativo): È il vero "cervello" della rete SDN, dove operano le applicazioni che gestiscono le policy di rete (es. routing, load balancing, firewall e controllo degli accessi). Queste applicazioni comunicano le loro "intenzioni" al Control Plane tramite le Northbound API e, grazie al disaccoppiamento (unbundling), possono essere fornite da sviluppatori software di terze parti in modo del tutto indipendente dal produttore dell'hardware fisico.
+	
   * *Topologia (6 host, 3 switch):* Spiega come funziona l'inoltro dei pacchetti in questa topologia.
+
+---
+
 * **Limitazioni di OpenFlow e superamento con P4:** Quali sono i limiti di OpenFlow e perché è stato superato da P4?
   * *Risposta:* OpenFlow è vincolato ai protocolli di rete standard; le sue tabelle di match funzionano solo su header predefiniti (es. IPv4, TCP). **P4** (Programming Protocol-independent Packet Processors) supera questo limite rendendo il data plane completamente programmabile: permette di definire il parsing di pacchetti custom e protocolli proprietari non ancora inventati, dicendo allo switch *come* estrarre e processare i campi.
 * **Applicazione Reale:** Esempio SDN (Google B4).
