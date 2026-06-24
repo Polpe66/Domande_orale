@@ -80,7 +80,21 @@
 ### 2. Reti Cellulari (4G vs 5G)
 * **Riconoscimento Architettura:** (Immagine con source/target BS) Che tipo di rete è? 4G o 5G? Perché? (S-GW/P-GW = 4G; UPF = 5G).
 * **Handover:** Come funziona l'handover?
-* **Tunneling:** Come viene realizzato il tunnel tra gateway e base station? (GTP over UDP/IP).
+* **Tunneling:** Come viene realizzato il tunnel tra gateway e base station? 
+	Il tunneling nel piano dati delle reti mobili (LTE/4G) viene realizzato utilizzando il protocollo **GTP** (*GPRS Tunneling Protocol*), che è incapsulato all'interno di pacchetti UDP per garantire efficienza e bassa latenza.
+	Nell'architettura standard 4G LTE, che implementa il **routing indiretto**, la connessione viene divisa in due tunnel GTP in cascata:
+	1. Un primo tunnel tra il **P-GW** (Home Network) e l'**S-GW** (rete visitata).
+	2. Un secondo tunnel tra l'**S-GW** e la **Base Station** (BS) a cui è collegato il dispositivo.
+	
+	Questa architettura permette la gestione della mobilità: durante un **handover**, l'S-GW deve semplicemente cambiare l'endpoint del secondo tunnel (spostandolo dalla BS sorgente alla BS target). Il primo tunnel verso il P-GW rimane inalterato, rendendo lo spostamento trasparente per la rete esterna (Internet) e impedendo alle connessioni in corso di cadere.
+	
+	Alla base di questo funzionamento c'è la rigida separazione tra i piani della rete:
+	* **Data Plane (Piano Dati):** Nodi come BS, S-GW e P-GW usano **GTP-U** su UDP per trasportare il traffico utente in modo veloce.
+	* **Control Plane (Piano di Controllo):** Entità "intelligenti" come MME e HSS, che gestiscono l'autenticazione, la mobilità e la creazione dei tunnel, comunicano usando protocolli estremamente affidabili come **SCTP/IP** (*Stream Control Transmission Protocol*), preferito al TCP per la sua maggiore robustezza nel gestire segnali di controllo critici.
+	* BS sta a metà fra data plane e control plane, poichè comunica con S-GW e MME.
+
+
+
 
 ### 3. Software Defined Networking (SDN) & OpenFlow
 * **Generalized Forwarding:** Spiega lo schema OpenFlow (con l'header del pacchetto) partendo dal concetto di *generalized forwarding*.
