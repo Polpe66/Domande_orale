@@ -177,6 +177,34 @@
 ---
 
 * **DFT, Campionamento e Quantizzazione:**
-  * *Campionamento (Teorema di Shannon-Nyquist):* Discretizzazione nel tempo. Per ricostruire il segnale, la frequenza di campionamento f_s deve essere > 2 f_max.
-  * *Quantizzazione:* Discretizzazione dell'ampiezza. I valori continui campionati vengono approssimati a livelli discreti predefiniti (es. binari).
-  * *Discrete Fourier Transform (DFT):* Serve per analizzare lo spettro delle frequenze di un segnale campionato nel tempo discreto (input: N campioni temporali; output: N numeri complessi delle frequenze).
+	### Digitalizzazione dei segnali: Campionamento e Quantizzazione
+
+	L'elaborazione da segnale analogico a digitale avviene tramite due processi fondamentali: campionamento e quantizzazione. Sotto il rispetto delle condizioni di Nyquist-Shannon, il campionamento non introduce distorsione ed è teoricamente reversibile; al contrario, la quantizzazione è un'operazione irreversibile poiché introduce un errore di arrotondamento.
+	
+	#### 1. Campionamento (Teorema di Nyquist-Shannon)
+	Nel campionamento operiamo nel dominio del tempo, estraendo il valore assunto dal segnale in istanti discreti, spaziati tra loro di un tempo $T_s$. La frequenza di campionamento è definita come $f_s = \frac{1}{T_s}$.
+	
+	Il teorema di Nyquist-Shannon afferma che, se un segnale ha banda limitata (ovvero il suo spettro diventa nullo per frequenze superiori a $f_{max}$), esso può essere ricostruito senza aliasing se e solo se la frequenza di campionamento soddisfa la condizione:
+	
+	$$f_s \geq 2 \cdot f_{max}$$
+	
+	
+	
+	Se questa condizione non viene rispettata ($f_s < 2 \cdot f_{max}$), si verifica l'**aliasing**: il campionamento crea delle repliche dello spettro che si sovrappongono. In tale scenario, non risulta possibile apprezare i cambiamenti del segnale.
+	
+	#### 2. Quantizzazione
+	La quantizzazione opera nel dominio dell'ampiezza, trasformando ogni campione continuo in un valore intero rappresentabile con $R$ bit, in un intervallo compreso tra $0$ e $2^R - 1$. Poiché lo spazio dei valori ammissibili è finito, questa operazione comporta necessariamente un arrotondamento dei valori reali ai livelli di quantizzazione più vicini.
+	
+	* **Bit Rate**: Il numero di bit al secondo necessari per trasmettere il segnale è dato dal prodotto $R \cdot f_s$.
+	* **Distorsione**: Per limitare l'errore di quantizzazione, occorre aumentare il numero di bit $R$. Tuttavia, all'aumentare di $R$ aumenta anche il bit rate, che deve essere compatibile con la capacità del canale di Shannon, definita come:
+	
+	$$C = B \cdot \log_2(1 + SNR)$$
+	
+	dove $B$ è la larghezza di banda del canale e $SNR$ il rapporto segnale-rumore.
+	
+	
+	
+	In sintesi, mentre il campionamento (se fatto correttamente) preserva l'informazione temporale, la quantizzazione sacrifica la precisione in ampiezza per rendere il segnale gestibile dai sistemi digitali.
+	
+  * *Discrete Fourier Transform (DFT):
+	Nel contesto del Digital Signal Processing (DSP), la Trasformata Continua di Fourier (CTFT) non è direttamente implementabile poiché opera su segnali continui e su un dominio di frequenza infinito. Poiché i calcolatori digitali dispongono di memoria finita e possono gestire solo segnali campionati nel tempo, è necessario utilizzare la **Discrete Fourier Transform (DFT)**. La DFT prende in input una sequenza finita di $N$ campioni, denominati $s[k]$, e li trasforma in un array di $N$ coefficienti complessi nel dominio della frequenza. Essendo basata su una sommatoria finita, la DFT è facilmente calcolabile da un processore. La formula della DFT è: $$S[n] = \sum_{k=0}^{N-1} s[k] \cdot e^{-j \frac{2\pi}{N} nk}$$ Dove:  $s[k]$ è il segnale campionato nel tempo. $S[n]$ è il segnale nel dominio della frequenza (i coefficienti complessi).  $e^{-j \frac{2\pi}{N} nk}$ rappresenta il nucleo della trasformata, derivato dalla formula di Eulero. Grazie alla DFT, il computer può manipolare digitalmente i segnali, permettendo operazioni fondamentali come il filtraggio, la compressione (es. MP3, JPEG) e l'analisi spettrale. In pratica, per ottimizzare il calcolo di questa sommatoria, non si usa la formula diretta (che avrebbe una complessità computazionale di $O(N^2)$), ma l'algoritmo **FFT (Fast Fourier Transform)**, che riduce la complessità a $O(N \log N)$, rendendo possibile l'elaborazione dei segnali in tempo reale.
