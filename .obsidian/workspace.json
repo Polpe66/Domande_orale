@@ -4,33 +4,21 @@
     "type": "split",
     "children": [
       {
-        "id": "afb33d746565022d",
+        "id": "1a63fd2f3b4d4685",
         "type": "tabs",
         "children": [
           {
-            "id": "04304ddfbce490e2",
+            "id": "ff7cce53a75515de",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "MCPS/MCPS_questions.md",
+                "file": "MCPS/MCPS_questions_Paganelli.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "MCPS_questions"
-            }
-          },
-          {
-            "id": "0c317b0b9b720317",
-            "type": "leaf",
-            "state": {
-              "type": "pdf",
-              "state": {
-                "file": "MCPS/Questions for the oral exam 2023_module2.pdf"
-              },
-              "icon": "lucide-file-text",
-              "title": "Questions for the oral exam 2023_module2"
+              "title": "MCPS_questions_Paganelli"
             }
           }
         ]
@@ -206,13 +194,14 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "04304ddfbce490e2",
+  "active": "ff7cce53a75515de",
   "lastOpenFiles": [
+    "MCPS/MCPS_questions_Chessa.md",
+    "MCPS/MCPS_questions_Paganelli.md",
     "MCPS/Questions for the oral exam 2023_module2.pdf",
-    "MCPS/MCPS_questions.md",
     "MCPS/Paganelli_fatto.pdf",
-    "MCPS/Immagini Paganelli.md",
     "MCPS/images/Pasted image 20260623183835.png",
+    "MCPS/Immagini Paganelli.md",
     "MCPS/images/Pasted image 20260623181841.png",
     "MCPS/images/Pasted image 20260623175329.png",
     "MCPS/images/Pasted image 20260623170214.png",
