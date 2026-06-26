@@ -1,5 +1,3 @@
-
-
 > **AVVISO PER PAGANELLI:** La prof.ssa chiede *tutto*, anche argomenti o dettagli non direttamente raffigurati nelle immagini dell'esame (es. il protocollo P4). **Tutti** vengono interrogati su Fourier. Per la Discrete Fourier Transform (DFT) non le interessano le formule a memoria, ma vuole che i concetti siano chiarissimi.
 
 ---
@@ -27,7 +25,7 @@
 	Nel caso del **terminale esposto** un nodo percepisce l'etere occupato a causa di una trasmissione vicina e si astiene dall'inviare dati a un ricevitore lontano, sebbene questa sua potenziale comunicazione non andrebbe a interferire in alcun modo con la ricezione in corso, bloccando di fatto trasmissioni compatibili e sprecando banda.
 	
 	Il protocollo MACA risolve queste inefficienze tramite due pacchetti di controllo che permettono di prevenire la collisione sui dati. Il mittente invia un pacchetto RTS (Request To Send) indicando l'indirizzo sorgente, la destinazione e la durata stimata della comunicazione. Se il destinatario è pronto, risponde con un pacchetto CTS (Clear To Send), replicando l'informazione sulla durata. Tutti i nodi che intercettano queste informazioni aggiornano il proprio Network Allocation Vector (NAV), un timer interno che forza il silenzio radio per il tempo pattuito.
-	Per la risoluzione del terminale esposto, un nodo che si trova nel range del mittente ma non in quello del destinatario riceverà l'RTS ma non ascolterà il successivo CTS. Da questo deduce che la ricezione avverrà lontano da lui e che una sua trasmissione verso un altro nodo non creerebbe collisioni a quel ricevitore, sentendosi libero di avviare una propria comunicazione. 
+	Per la risoluzione del terminale esposto, un nodo che si trova nel range del mittente ma non  in quello del destinatario riceverà l'RTS ma non ascolterà il successivo CTS. Da questo deduce che la ricezione avverrà lontano da lui e che una sua trasmissione verso un altro nodo non creerebbe collisioni a quel ricevitore, sentendosi libero di avviare una propria comunicazione. 
 	Nel caso del terminale nascosto, il nodo si trova fuori dal range del mittente ma all'interno di quello del destinatario. Esso non sentirà l'RTS, ma riceverà il CTS. Questo lo informa che un dispositivo vicino sta per ricevere dati, costringendolo a rimanere disciplinatamente in silenzio per il tempo indicato.
 	Con MACA le uniche collisioni possibili avvengono tra pacchetti RTS simultanei, i quali essendo molto piccoli non comportano perdita di payload utile. Per la risoluzione delle contese sugli RTS in caso di ingorgo si utilizza l'algoritmo Binary Exponential Backoff. 
 	
@@ -48,13 +46,39 @@
 
 
 * **Ritardi:** Cosa sono i ritardi inter-frame (SIFS, DIFS)? A cosa servono?
-	Nel protocollo CSMA/CA, vengono prioritizzati i pacchetti grazie a questi IFS, Interframe Space, che sono tempi di attesa di default da rispettare. Nel caso del DIFS, abbiamo un tempo di attesa obbligatorio lungo che permette di evitare di interrompere messaggi a priorità maggiore. Invece il tempo di attesa più corto, ovvero il SIFS, viene rispettato dai pacchetti come quelli di handshake (RTS, CTS, ACK) perché hanno massima priorità. Il sistema funziona poiché DIFS > SIFS, quindi sicuramente l'apertura di una nuova comunicazione, ad esempio l'invio di un frame dati, non interrompe i messaggi con priorità maggiore che partiranno sempre prima. Inoltre, i tempi come il DIFS scorrono atomicamente in modo contiguo quando il canale è libero: se il canale diventa occupato prima del termine, il timer si azzera e si riparte da capo, a differenza del contatore dell'exponential backoff che invece si può congelare e riprendere da dove si era fermato.
-	
+	Nel protocollo CSMA/CA, vengono prioritizzati i pacchetti grazie a questi IFS, Interframe Space, che sono tempi di attesa di default da rispettare. Nel caso del DIFS, abbiamo un tempo di attesa obbligatorio lungo che permette di evitare di interrompere messaggi a priorità maggiore. Invece il tempo di attesa più corto, ovvero il SIFS, viene rispettato dai pacchetti come quelli di handshake (RTS, CTS, ACK) perché hanno massima priorità. Il sistema funziona poiché DIFS > SIFS, quindi sicuramente l'apertura di una nuova comunicazione oppure l'invio di un frame dati, non interrompe i messaggi con priorità maggiore che partiranno sempre prima. 
+	Inoltre, i tempi come il DIFS scorrono atomicamente in modo contiguo quando il canale è libero: se il canale diventa occupato prima del termine, il timer si azzera e si riparte da capo, a differenza del contatore dell'exponential backoff che invece si può congelare e riprendere da dove si era fermato.
+---
 
 ### 2. Reti Cellulari (4G vs 5G)
-* **Riconoscimento Architettura:** (Immagine con source/target BS) Che tipo di rete è? 4G o 5G? Perché? (S-GW/P-GW = 4G; UPF = 5G).
-* **Handover:** Come funziona l'handover?
+* **Riconoscimento Architettura:** (Immagine con source/target BS) Che tipo di rete è? 4G o 5G? Perché? 
+	È possibile capire che ci troviamo in una rete 4G nell'immagine grazie alle sue componenti specifiche: infatti possiamo notare che sono presenti un S-Gateway e un P-Gateway. Brevemente, la struttura di una rete cellulare 4G o 5G è composta da 3 blocchi funzionali: la RAN (Radio Access Network), che è la collezione delle base station che permettono l'accesso radio alla rete; la backhaul network, che rappresenta la rete di trasporto cablata; e la Core Network, dove avviene la gestione della mobilità, l'autenticazione, il pricing e la connettività verso Internet.
+	
+	Nel dettaglio, la rete 4G (chiamata EPC - Evolved Packet Core) è composta dall'**UE** (User Equipment), ovvero l'host wireless che dispone nella SIM di un identificativo univoco denominato IMSI (International Mobile Subscriber Identity) e implementa uno stack protocollare di rete completo. 
+	L'**eNodeB** rappresenta il punto di accesso radio alla rete da parte dell'UE e ha il compito di comunicare con le altre base station per mitigare le interferenze, gestire la mobilità, eseguire l'handover e gestire il tunneling dei dati verso la core. 
+	**L'MME** (Mobility Management Entity) rappresenta il cervello del piano di controllo della rete: si occupa dell'autenticazione, del tracciamento della posizione e della segnalazione per creare i tunnel.
+	**L'HSS** rappresenta un database che contiene i profili degli abbonati, linterpellato per l'autenticazione e per salvarel'ultima posizione nota dell'UE. 
+	**L'S-GW**  permette la comunicazione da e verso RAN e permette l'àncora di mobilità locale per il traffico dati (data plane) quando l'utente si sposta tra RAN diverse. 
+	**Il P-GW** è l'ultimo punto di contatto tra la core e l'Internet pubblico: alloca gli indirizzi IP all'UE e applica funzionalità di NAT, QoS e policy.
+	
+	La rete 5G si differenzia nettamente dalla 4G poiché l'infrastruttura della core è stata stravolta per essere completamente cloud-native. 
+	
+	Sfrutta a pieno i concetti di SDN, NFV e Network Slicing: le funzioni di rete sono virtualizzate in modo da essere flessibili ed elastiche al variare del traffico. La core 5G Standalone non è retrocompatibile, e una delle poche cose rimaste invariate dal 4G è l'utilizzo del protocollo GTP-U (incapsulato su UDP) per fare tunneling a livello di data plane. 
+	Già nel 4G c'era una parziale separazione dettata dai principi SDN: il control plane (MME, HSS) comunica tramite protocolli sicuri come SCTP, mentre i dati passano da S-GW e P-GW in GTP-U, con l'eNodeB che fa da ponte tra i due mondi. 
+	
+	Il 5G porta all'estremo questo concetto disaccoppiando totalmente il piano dati da quello di controllo. Nella core 5G troviamo nuove funzioni equivalenti a quelle 4G: al posto degli eNodeB ci sono i **gNodeB;** nel data plane, al posto di S-GW e P-GW abbiamo un unico modulo ad altissime prestazioni chiamato **UPF** (User Plane Function); le funzioni dell'MME vengono divise tra **AMF** (gestione accessi, mobilità e autenticazione) e **SMF** (gestione delle sessioni dati); al posto dell'HSS abbiamo **l'AUSF** (server per le logiche di autenticazione) e **l'UDM** (database per il mapping degli utenti). Infine, abbiamo il PCF, che sostituisce il vecchio PCRF per la gestione centralizzata delle policy di rete.
 
+---
+
+* **Handover:** Come funziona l'handover?
+	L'handover permette di cambiare base station senza interrompere il segnale, ma parte dal presupposto che l'UE sia già connesso alla rete (ad esempio una visited network, se siamo in roaming). La procedura iniziale di attacco alla rete prevede che l'UE ascolti il primary e secondary sync della base station e decida di associarsi a quella con segnale migliore inviando il suo IMSI. La rete risponde avviando l'autenticazione: l'MME visitato comunica con l'HSS domestico, il quale fornisce le chiavi di autenticazione tramite un protocollo challenge-response (le chiavi vengono calcolate in parallelo anche dall'UE). Nel frattempo l'HSS domestico salva la nuova posizione. Con l'autenticazione che ha successo, dato che vige l'indirect routing, viene creato un tunnel fra il P-GW domestico e l'S-GW visitato. Nella rete visitata ue riceve un IP temporaneo, che S-GW tramite traduzione NAT può identificare.
+
+	Quindi, a seguito dell'associazione e dell'autenticazione, vengono creati i tunnel fra P-GW domestico e S-GW visitato, e un tunnel fra S-GW visitato e l'eNodeB per poter comunicare con l'UE, utilizzando sempre il protocollo di tunneling GTP (e non GPT).
+	
+	Detto questo, il vero e proprio handover è possibile e avviene in questo modo: 1) BS decide tutto e invia una Handover Request alla target BS; 2) la target BS alloca le risorse radio necessarie e risponde inviando un Handover Ack; 3) la source BS comunica all'UE che l'handover può procedere e gli ordina di staccarsi e collegarsi alla nuova antenna; 4) durante questo istante di transizione, tutto il traffico in arrivo alla source BS non viene perso, ma viene inoltrato direttamente alla target BS; 5) la target BS dice all'MME che ora è lei la nuova BS di riferimento, e l'MME istruisce l'S-GW che semplicemente cambia l'endpoint del tunnel GTP facendolo puntare alla nuova BS; 6) la target BS dice alla source BS che l'handover ha avuto successo e la source BS rimuove e libera le risorse radio allocate precedentemente; 7) abbiamo ora il tunnel aggiornato alla target BS con connessione diretta all'UE.
+	
+	N.B. Tutta la logica di negoziazione è spostata all'edge, ovvero gestita direttamente tra le due base station senza coinvolgere la Core Network. Questo avviene proprio per garantire bassissima latenza nel cambio di cella e un'enorme scalabilità del sistema.
+	
 ---
 
 * **Tunneling:** Come viene realizzato il tunnel tra gateway e base station? 
@@ -77,7 +101,11 @@
 
 ### 3. Software Defined Networking (SDN) & OpenFlow
 * **Generalized Forwarding:** Spiega lo schema OpenFlow (con l'header del pacchetto) partendo dal concetto di *generalized forwarding*.
-	Nel routing tradizionale si inoltra in base all'IP di destinazione. Nel generalized forwarding di  SDN, gli switch usano tabelle "Match-Action". Il "match" può essere fatto su molteplici campi dell'header del pacchetto (MAC address, IP sorgente/destinazione, porte TCP/UDP, ecc.), permettendo azioni complesse (inoltra, droppa, modifica, invia al controller)
+	OpenFlow rappresenta lo standard comunicativo fra controller e switch. Per generalized forwarding si intende un paradigma di inoltro non basato esclusivamente sull'indirizzo IP di destinazione, come nel caso del routing IP tradizionale, ma basato sulla possibilità di fare match su svariati campi degli header del pacchetto a diversi livelli. Nello specifico, la struttura permette di fare match a livello link , a livello di rete e a livello di trasporto. Questo permette di discriminare molte più casistiche e, di conseguenza, avere azioni più ricche. Le azioni possibili della flow table sono forward, drop, modify e send to controller.
+
+	La cosa interessante è che con questo disaccoppiamento, dispositivi logici che prima risultavano necessariamente fisici e proprietari possono essere emulati programmando nella maniera corretta le entry della flow table. Lo stesso hardware generico può agire da switch, router, firewall o NAT, togliendo spesso la necessità di acquistare middlebox specifiche.
+	
+	Sappiamo che nelle SDN c'è il paradigma di disaccoppiamento fra la logica di controllo e il forwarding: nel control plane si definisce il comportamento della rete, e nel data plane si istruisce l'hardware su come applicare quel comportamento tramite le flow table. I messaggi "Controller-to-Switch" (e non simmetrici) sono inviati dal controller e includono Features (per ottenere le capacità dello switch), Configure (per impostare parametri), Packet-Out (per ordinare allo switch di far uscire un pacchetto da una specifica porta) e Flow-Mod (per aggiungere, modificare o eliminare regole dalla flow table). I messaggi "Asincroni" (e non asimmetrici) partono spontaneamente dallo switch verso il controller e includono Port-Status (indica un cambiamento fisico nella porta), Flow-Removed (indica che una entry della tabella è scaduta o è stata rimossa) e Packet-In (usato per inviare un pacchetto sconosciuto al controller affinché decida cosa farne). Infine ci sono i veri messaggi "Simmetrici", come Hello ed Echo, che possono essere generati da entrambe le parti per instaurare e mantenere viva la connessione.
 	
 ---
 * **Architettura SDN:** Descrivi Control Plane, Data Plane, Application Plane e API (Southbound/Northbound).
@@ -91,45 +119,63 @@
 	
   * *Topologia (6 host, 3 switch):* Spiega come funziona l'inoltro dei pacchetti in questa topologia.
 
+
 ---
 
 * **Limitazioni di OpenFlow e superamento con P4:** Quali sono i limiti di OpenFlow e perché è stato superato da P4?
-  * *Risposta:* OpenFlow è vincolato ai protocolli di rete standard; le sue tabelle di match funzionano solo su header predefiniti (es. IPv4, TCP). **P4** (Programming Protocol-independent Packet Processors) supera questo limite rendendo il data plane completamente programmabile: permette di definire il parsing di pacchetti custom e protocolli proprietari non ancora inventati, dicendo allo switch *come* estrarre e processare i campi.
+	OpenFlow nasce come protocollo semplice con circa 12 campi dell'header con cui fare match, ma ad oggi siamo arrivati a oltre 40, rendendone complesso e pesante l'uso. Inoltre, il moderno traffico dei datacenter introduce nuovi protocolli di incapsulamento (come nel caso delle VXLAN) che un hardware OpenFlow pre-impostato non è in grado di riconoscere e discriminare. La più grande problematica, infatti, risiede nel fatto che nelle SDN classiche il control plane è programmabile, ma il data plane non lo è. Quest'ultimo è progettato con funzionalità fisse dai vendor hardware (chip ASIC rigidi), e di conseguenza risulta impossibile gestire in modo efficiente e rapido protocolli non previsti in fase di fabbricazione.
+
+	P4 permette di superare questo ostacolo introducendo un linguaggio di programmazione direttamente per il data plane. Oltre a stabilire _cosa_ deve succedere, P4 permette di specificare al chip _come_ processare i dati, definendo la composizione delle flow table e la struttura logica vera e propria dello switch. Il codice P4 viene compilato appoggiandosi a un _architecture model_ (fornito dal produttore del chip) ed è composto da tre stadi logici: un **Parser**, che scompone i pacchetti in ingresso estraendo esattamente i campi dell'header definiti dal programmatore; la pipeline **Match-Action**, dove i dati attraversano le flow table custom; e infine il **Deparser**, che ricompone l'header del pacchetto (applicando le eventuali modifiche) e lo inoltra. 
+	Abbiamo la possibilità di specificare controlli personalizzati.
+---
 * **Applicazione Reale:** Esempio SDN (Google B4).
-*  **In che modo il forwarding generalizzato differisce dal forwarding basato sulla destinazione?**                                                                                                                                             
-     Risposta: Il destination-based forwarding tradizionale decide l'instradamento basandosi solo sull'indirizzo IP di destinazione. Il                                                 
-     forwarding generalizzato (SDN/OpenFlow) generalizza radicalmente questo concetto con l'astrazione match+action: può usare qualsiasi                                                
-     campo dell'header (L2: MAC, L3: IP sorgente/destinazione, protocollo, ToS; L4: porte TCP/UDP) come chiave di match, e le azioni non si                                             
-     limitano a forward ma includono anche drop, modify (es. NAT, VLAN rewriting) e send to controller. Permette inoltre il routing per-                                                
-     flusso (regole diverse per flussi diversi), impossibile nel routing destination-based classico. 
--  **Cosa si intende per operazione match-action di un router o switch? Nel caso del destination-based forwarding, cosa viene confrontato e quale azione viene eseguita?**                                                                                                                                                  
-     Match-action è l'astrazione fondamentale di SDN/OpenFlow: un pacchetto arriva allo switch → viene confrontato con le voci della flow table (match) su uno o più campi dell'header (MAC, IP, ToS, protocollo, porte TCP/UDP) → se c'è corrispondenza, viene eseguita                                                     
-     l'azione associata:       
-     - forward: inoltra su una porta                                 
-     - drop: scarta            
-     - modify: modifica header (NAT, VLAN)                                   
-     - send to controller: invia al controller                                                                                                                                                                                                               
-     Destination-based forwarding è un caso particolare:                      
-     - Match: solo l'indirizzo IP di destinazione                                       
-     - Azione: forward sulla porta della route più specifica 
-- **Nel caso del forwarding generalizzato in SDN, cita tre campi che possono essere confrontati (match) e tre azioni che possono essere eseguite.**                                                                                                                                                                                                                                    
-     Tre campi matchable:                              
-     1. Indirizzo MAC (sorgente/destinazione) — L2                                               
-     2. Indirizzo IP (sorgente/destinazione) — L3                                            
-     3. Porta TCP/UDP (sorgente/destinazione) — L4         
-     
-     Altri possibili: protocollo IP, ToS/DSCP, VLAN ID.                                                                                                                             
-     Tre azioni:                          
-     1. forward: invia il pacchetto su una porta specifica                                                     
-     2. drop: scarta il pacchetto                            
-     3. modify: modifica campi dell'header (es. NAT, VLAN rewriting)                                                           
-     Altre: send to controller (invia al controller per decisione centralizzata).
+	Le reti WAN tradizionali sono basate sul principio di conservatività: sono composte da costosissimi collegamenti transatlantici e da router ad alte prestazioni. Per evitare perdite di dati in caso di guasti o picchi, i collegamenti vengono mantenuti a una saturazione del 30-40%, richiedendo un _overprovisioning_ (sovradimensionamento) del doppio o del triplo della capacità. Questo approccio tratta il traffico tutto allo stesso modo e rende impossibile fare Traffic Engineering in modo efficiente.
+	
+	Tutto questo porta a costi di scalabilità insostenibili, e per questo Google ha puntato sulla creazione di una rete inter-datacenter specifica chiamata **B4**. Google possiede due backbone separati: la **B2** per il traffico verso l'utente finale (Internet) e la **B4** per il traffico interno fra i datacenter. Questa separazione permette di discriminare il traffico nella B4 in base a latenza e priorità (ad esempio, le sincronizzazioni di backup in background hanno priorità bassa rispetto alle query live). Questo consente un Traffic Engineering molto aggressivo: la rete può accodare o bloccare pacchetti meno importanti se c'è un picco di traffico a maggiore priorità. Tutto questo è reso possibile dall'introduzione dell'SDN, che porta dinamicità e facilità di gestione centralizzata.
+	
+	B4, tuttavia, non è nata SDN da zero, ma derivava da una rete classica in cui i nodi effettuavano routing tramite protocolli standard (OSPF, IS-IS, BGP). È stata necessaria una trasformazione a fasi. Nella situazione intermedia sono stati aggiunti switch OpenFlow dotati di una sorta di modulo "glue", basato su Quagga per interagire con i moduli standard.
+	A seguito è avvenuta la traslazione completa passando a tutti switch OF, mantenendo il protocollo BGP per i cluster. Questo permette di mantenere la comunicazioni con gli altri attori in gioco e favorisce il cambiamento.
+	
+	Nell'architettura SDN finale operano due coordinatori principali. Da un lato ci sono gli **OpenFlow Controller** di sito (cluster), che gestiscono localmente gli switch e astraggono l'hardware. Dall'altro, al di sopra di tutti, c'è il **Traffic Engineering (TE) Server** globale: avendo la mappa completa della rete, questo server gestisce i flussi di traffico e calcola i percorsi ottimali, permettendo a Google di far arrivare il consumo dei collegamenti fisici quasi al 100%, annullando gli sprechi.
+---
+*  **In che modo il forwarding generalizzato differisce dal forwarding basato sulla destinazione? Nel caso del destination-based forwarding, cosa viene confrontato e quale azione viene eseguita? Cosa si intende per operazione match-action di un router o switch?Nel caso del forwarding generalizzato in SDN, cita tre campi che possono essere confrontati (match) e tre azioni che possono essere eseguite.**
+
+	Il forwarding destination-based si basa solo sul match del campo IP di destinazione (a livello di rete) e l'unica azione eseguita è l'inoltro (forwarding) sulla base del risultato della tabella di routing. Invece, con il forwarding generalizzato risulta possibile discriminare il traffico sulla base di molteplici campi dell'header del pacchetto a diversi livelli (link layer, network layer, transport layer). Nel caso delle reti SDN, tre esempi di campi che possono essere confrontati sono il MAC source, il MAC dest e l'IP source (o l'IP ToS). Questo si realizza attraverso l'operazione match-action, che consiste nell'effettuare specifiche azioni (come forward, drop e modify, ma anche send to controller) a seguito del riconoscimento di un pattern di flusso (ovvero i valori specifici assunti dai campi nell'header).
+
+---
 
 ### 4. Teoria dei Segnali (Domanda Fissa)
 * **Serie di Fourier:** Scrivi la formula di s(t) e dei coefficienti, spiegando a cosa serve.
-  * *Risposta/Formula s(t):* Serve a scomporre qualsiasi segnale periodico in una somma infinita di sinusoidi e cosinusoidi (armoniche).
-    `s(t) = a_0/2 + Σ [a_n cos(2πn f_0 t) + b_n sin(2πn f_0 t)]`
-  * *Coefficienti:* `a_0` rappresenta la componente continua (il valore medio del segnale). I coefficienti `a_n` e `b_n` si calcolano tramite l'integrale del segnale moltiplicato rispettivamente per il coseno e il seno sul periodo T. Indicano l'"ampiezza" (o il peso) di ciascuna frequenza all'interno del segnale originale.
+
+	La teoria dei segnali è fondamentale: permette di estrarre informazioni, rimuovere il rumore, aumentare l'efficienza ed effettuare la conversione analogico-digitale.
+
+	Un segnale è la variazione di un fenomeno fisico misurabile che porta informazione, dipendente da una o più variabili indipendenti. Noi ci interessiamo principalmente a segnali deterministici e monodimensionali, in cui l'unica variabile indipendente è il tempo.
+	
+	La Serie di Fourier si basa sul principio che un segnale periodico può essere scomposto come somma di infinite componenti oscillanti. Questo comporta un cambio di coordinate dal dominio del tempo al dominio della frequenza, usando funzioni base ortogonali dette $\phi_n(t)$.
+	
+	Infatti, un segnale continuo e periodico può essere rappresentato con il periodo base da $-\pi$ a $\pi$, la formula della Serie di Fourier è:
+	
+	$$s(t) = \frac{a_0}{2} + \sum_{n=1}^{\infty} \left[ a_n \cos(nt) + b_n \sin(nt) \right]$$
+	
+	La formula è composta da $a_0$, che (diviso per 2) rappresenta la componente continua, ovvero il valore medio del segnale nel periodo. A seguire troviamo la sommatoria delle armoniche, che rappresentano le funzioni oscillanti al variare della frequenza. I termini $a_n$ e $b_n$ sono i coefficienti di ampiezza. Nel dettaglio, $a_n$ è il coefficiente dei coseni, che indica il peso (la quantità) di funzioni cosinusoidali presenti nel segnale, mentre $b_n$ coefficiente dei seni, indica il peso delle componenti sinusoidali. 
+	
+	Questi coefficienti si calcolano tramite i seguenti integrali:
+	
+	$$a_0 = \frac{1}{\pi} \int_{-\pi}^{\pi} s(t) dt$$
+	
+	$$a_n = \frac{1}{\pi} \int_{-\pi}^{\pi} s(t) \cos(nt) dt$$
+	
+	$$b_n = \frac{1}{\pi} \int_{-\pi}^{\pi} s(t) \sin(nt) dt$$
+	
+	La serie di Fourier non è valida per qualunque funzione periodica. Non esiste una condizione necessaria, ma le condizioni sufficienti di Dirichlet affermano che, per avere una serie che converge nei reali, dobbiamo avere segnale continuo e continua a tratti, ovvero componenti finite nei sottointervali finiti e in caso di discontinuità limite che va ad un numero discreto.
+	
+	Sfruttando la formula di Eulero, i numeri complessi ci danno la possibilità di passare alla forma complessa della Serie di Fourier. I coefficienti $a_n$ e $b_n$ vengono racchiusi in un unico coefficiente complesso $S_n$, che rende la manipolazione matematica molto più agile.
+	
+	Nel caso di segnali non periodici, usiamo la Trasformata Continua di Fourier (CTFT). Questa prende un segnale aperiodico e lo considera "periodico" con un periodo $T$ che tende all'infinito. In questo modo, la frequenza fondamentale tende a $0$ e, di conseguenza, la distanza tra le armoniche si restringe infinitamente, facendo passare lo spettro da discreto a continuo ed estendendo i concetti di Fourier a tutti i segnali.
+	
+	Quindi, in sintesi: se la Serie di Fourier genera in output uno spettro di frequenze discreto (a valori definiti), la CTFT fornisce uno spettro continuo come output con frequenze che vanno da $-inf$ a $+inf$.
+---
+
 * **DFT, Campionamento e Quantizzazione:**
   * *Campionamento (Teorema di Shannon-Nyquist):* Discretizzazione nel tempo. Per ricostruire il segnale, la frequenza di campionamento f_s deve essere > 2 f_max.
   * *Quantizzazione:* Discretizzazione dell'ampiezza. I valori continui campionati vengono approssimati a livelli discreti predefiniti (es. binari).

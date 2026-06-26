@@ -78,7 +78,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 300,
+    "collapsed": true
   },
   "right": {
     "id": "12338b9b9a262783",
@@ -196,9 +197,9 @@
   },
   "active": "ff7cce53a75515de",
   "lastOpenFiles": [
-    "MCPS/MCPS_questions_Chessa.md",
-    "MCPS/MCPS_questions_Paganelli.md",
     "MCPS/Questions for the oral exam 2023_module2.pdf",
+    "MCPS/MCPS_questions_Paganelli.md",
+    "MCPS/MCPS_questions_Chessa.md",
     "MCPS/Paganelli_fatto.pdf",
     "MCPS/images/Pasted image 20260623183835.png",
     "MCPS/Immagini Paganelli.md",
@@ -238,7 +239,6 @@
     "MCPS/build/md/Lezione 20 - (Lab) Network Function Virtualization.md",
     "MCPS/build/md/Lezione 2 - Piattaforme IoT.md",
     "MCPS/build/md/Lezione 19 - Caso studio Tartarughe.md",
-    "MCPS/build/md/Lezione 18 - The IEEE 802.15.4 Standard.md",
     "MCPS/build/md",
     "MCPS/build/images",
     "MCPS/build/extract_images.py"
