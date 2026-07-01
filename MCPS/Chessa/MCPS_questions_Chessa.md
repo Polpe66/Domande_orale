@@ -63,4 +63,7 @@
 * **Modello di Kansal:** Come definisce Kansal la neutralità energetica? Spiega il suo algoritmo.
 
 ---
-
+ da aggiungere:
+ Zigbee addresses (the image of the tree)  
+Energy harvesting (the image with the 3 integrals in the questions file)
+perchè router ha indirizzo in zigbee

@@ -20,7 +20,7 @@
             }
           },
           {
-            "id": "42919ec3ab6795cc",
+            "id": "2288acef245b0569",
             "type": "leaf",
             "state": {
               "type": "pdf",
@@ -89,7 +89,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 300,
+    "collapsed": true
   },
   "right": {
     "id": "12338b9b9a262783",
@@ -205,13 +206,13 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "42919ec3ab6795cc",
+  "active": "2288acef245b0569",
   "lastOpenFiles": [
+    "MCPS/Chessa/MCPS_questions_Chessa.md",
+    "MCPS/Chessa/Appunti_chessa.pdf",
     "MCPS/Chessa/Questions for the oral exam 2023.pdf",
     "MCPS/Paganelli/MCPS_questions_Paganelli.md",
     "MCPS/Paganelli/Paganelli_fatto.pdf",
-    "MCPS/Chessa/Appunti_chessa.pdf",
-    "MCPS/Chessa/MCPS_questions_Chessa.md",
     "MCPS/Paganelli/Immagini_Paganelli.pdf",
     "domande p2p.md",
     "MCPS/Paganelli",
