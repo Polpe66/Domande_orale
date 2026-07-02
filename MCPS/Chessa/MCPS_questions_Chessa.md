@@ -67,3 +67,11 @@
  Zigbee addresses (the image of the tree)  
 Energy harvesting (the image with the 3 integrals in the questions file)
 perchè router ha indirizzo in zigbee
+ superframe  
+  model task based (Energy Harvesting)
+  1.MQTT  
+2.Duty Cycle
+1. MQTT  
+2. Energy neutrality, Kansal model, utility
+3. 1) BMac  
+4) Task model vs Kansal model
