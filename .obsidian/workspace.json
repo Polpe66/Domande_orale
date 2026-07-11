@@ -4,23 +4,23 @@
     "type": "split",
     "children": [
       {
-        "id": "1a63fd2f3b4d4685",
+        "id": "0b6278afb8947050",
         "type": "tabs",
         "children": [
           {
-            "id": "b24bd82d2cf5fd09",
+            "id": "c9465570ac8eec8c",
             "type": "leaf",
             "state": {
               "type": "pdf",
               "state": {
-                "file": "MCPS/Chessa/Questions for the oral exam 2023.pdf"
+                "file": "MCPS/Chessa/Immagini_chessa.pdf"
               },
               "icon": "lucide-file-text",
-              "title": "Questions for the oral exam 2023"
+              "title": "Immagini_chessa"
             }
           },
           {
-            "id": "2288acef245b0569",
+            "id": "53e87b7029b663ac",
             "type": "leaf",
             "state": {
               "type": "pdf",
@@ -29,20 +29,6 @@
               },
               "icon": "lucide-file-text",
               "title": "Appunti_chessa"
-            }
-          },
-          {
-            "id": "f99ca25c2d358db7",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "MCPS/Chessa/MCPS_questions_Chessa.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "MCPS_questions_Chessa"
             }
           }
         ],
@@ -219,11 +205,14 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "2288acef245b0569",
+  "active": "53e87b7029b663ac",
   "lastOpenFiles": [
-    "MCPS/Chessa/Questions for the oral exam 2023.pdf",
-    "MCPS/Chessa/MCPS_questions_Chessa.md",
+    "MCPS/Chessa/Immagini_chessa.pdf",
+    "MCPS/Chessa/Immagini_e_Risposte.md",
     "MCPS/Chessa/Appunti_chessa.pdf",
+    "MCPS/Chessa/MCPS_questions_Chessa.md",
+    "MCPS/images/Pasted image 20260711154428.png",
+    "MCPS/images",
     "MCPS/Paganelli/MCPS_questions_Paganelli.md",
     "MCPS/Paganelli/Paganelli_fatto.pdf",
     "MCPS/Paganelli/Immagini_Paganelli.pdf",
@@ -240,8 +229,6 @@
     "MCPS/images/Pasted image 20260623111943.png",
     "MCPS/images/Pasted image 20260623105342.png",
     "MCPS/images/Pasted image 20260623101956.png",
-    "MCPS/images/Pasted image 20260623094401.png",
-    "MCPS/images",
     "MCPS/Esame Paganelli.pdf",
     "MCPS/build/appunti.md",
     "MCPS/Esame Chessa.md",
@@ -264,7 +251,6 @@
     "MCPS/build/md/Lezione 22 - (Lab) Multi-Access Edge Computing MEC.md",
     "MCPS/build/md/Lezione 21 - (Lab) Network Emulator con ComNetsEmu.md",
     "MCPS/build/md/Lezione 20 - (Lab) Network Function Virtualization.md",
-    "MCPS/build/md/Lezione 2 - Piattaforme IoT.md",
-    "MCPS/build/md/Lezione 19 - Caso studio Tartarughe.md"
+    "MCPS/build/md/Lezione 2 - Piattaforme IoT.md"
   ]
 }
