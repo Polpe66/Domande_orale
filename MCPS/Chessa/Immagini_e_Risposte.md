@@ -123,3 +123,45 @@ Il QoS 2 trova applicazione, ad esempio, in un sensore di insulina.
 
 ---
 ![[Pasted image 20260714120907.png]]
+Zigbee è un protocollo di comunicazione a costo ridotto, impiegabile globalmente, affidabile, scalabile e facile da distribuire.
+
+Zigbee lavora sopra lo standard IEEE 802.15.4, che si occupa del physical layer e del MAC layer, mentre lui si occupa dell'application layer e del network layer.
+
+Essendo diviso in livelli, Zigbee permette che un livello fornisca servizi per il successivo o il precedente, e ci sono per questo motivo 4 primitive: request, che permette a un livello superiore di chiedere un servizio a un livello inferiore; indicate, che permette di far notificare un evento da un livello inferiore al superiore; response, per confermare la ricezione dell'evento e agire con una procedura da livello superiore a inferiore; confirm, per confermare che il livello inferiore ha terminato il servizio richiesto dal superiore e mandare il risultato.
+
+Detto questo, possiamo parlare del livello rete in cui partecipano 3 attori. Gli RFD sono end device che non hanno funzionalità di routing e non possono inviare messaggi da soli, ma devono per forza associarsi a un coordinatore o a un FFD (router). Di conseguenza abbiamo gli FFD, che implementano l'intero stack di rete e hanno capacità di routing. Il coordinatore è un caso speciale di FFD che si occupa di gestire e creare la rete.
+
+Questa immagine in particolare mostra il meccanismo di join in una rete da parte di un dispositivo, che può essere FFD o RFD. Siamo nel caso di accesso indiretto (e non diretto grazie a un router o al coordinator che lo aggiunge alla rete). In questo caso avviene che il nostro device richiede al livello rete una network discovery request, un comando che cerca PAN esistenti; di conseguenza, il livello rete effettua una scansione attiva alla ricerca di PAN esistenti e tramite confirm restituisce i PAN ID, con in aggiunta informazioni su router e coordinatori. A seguito vengono notificati al livello applicativo i possibili ID e reti PAN; con qualche logica il device sceglie la PAN e invia una richiesta di join al livello inferiore, che richiede una association request performata dal livello MAC (allego anche association a livello MAC).
+
+A seguito avvengono l'associate confirm e il join confirm, e al nostro device arriva un indirizzo a 16 bit, il quale viene assegnato dal router o dal coordinator.
+
+![[Pasted image 20260714151136.png]]
+Questa immagine rappresenta il join a livello MAC ed è composto da un'associate request che richiede l'associazione a quello specifico PAN ID, inserendo anche l'indirizzo del coordinatore e il proprio indirizzo IEEE a 64 bit, che verrà sostituito da quello a 16 bit.
+
+La richiesta viene inviata nel Contention Access Period e a seguito avviene lo scambio di messaggi fra i due device. Il router o coordinator risponde con un ACK e notifica al suo livello network che è arrivata una richiesta; viene quindi fornita una risposta, ovviamente controllando la disponibilità di indirizzi.
+
+A seguito, con la response, viene fornito l'indirizzo a 16 bit. Dopo un tempo prestabilito, è il device che si vuole associare a fare polling e richiedere informazioni riguardo l'associazione con una data request tramite trasmissione indiretta.
+
+Dopo aver recuperato la risposta dal MAC layer del device che si vuole collegare, si effettua l'associate confirm, mentre la comm.status.indication indica che l'associazione è conclusa con successo o con un errore.
+
+---
+![[Pasted image 20260714152307.png]]
+**L'Application Framework**: ospita fino a **240 Application Objects (APO)**, ciascuno dei quali rappresenta un'applicazione definita dall'utente (es. il controllo di una lampadina o la lettura di un sensore). A ogni APO è associato un **endpoint (da 1 a 240)**. Gli endpoint fungono da veri e propri **"cavi virtuali"** (equivalenti ai socket Unix), consentendo la coesistenza di profili, dispositivi e punti di controllo differenti all'interno di un unico nodo fisico. Ogni specifica applicazione nella rete è identificata univocamente dalla combinazione `<indirizzo di rete a 16 bit, endpoint>`.
+
+ **Lo Zigbee Device Object (ZDO)**: si colloca tassativamente sull'**endpoint 0** ed è l'applicazione di gestione centrale del dispositivo. Lo ZDO è governato dallo _Zigbee Device Profile (ZDP)_ e ha il compito di coordinare i vari APO affinché si organizzino in un'applicazione distribuita. Fornisce quattro macro-servizi essenziali:
+    - **Device & Service Discovery**: permette di recuperare gli indirizzi fisici/logici dei nodi (Device) e di interrogarli per scoprire quali profili e servizi supportano (Service).
+    - **Binding Management**: elabora le richieste per creare o rimuovere collegamenti logici nella Binding Table dell'APS, abilitando l'instradamento indiretto.
+    - **Network & Node Management**: gestisce l'avvio della rete, le richieste di join/leave e il recupero delle tabelle di routing locali.
+
+**L'Application Support Sublayer (APS)**: funge da **livello di trasporto leggero**. Dal punto di vista dei dati, l'APS permette lo scambio asincrono di messaggi tra i dispositivi e si occupa di **generare ACK end-to-end (APS-ACK)** per garantire l'affidabilità della consegna. Dal punto di vista della gestione, l'APS memorizza e mantiene tre strutture dati critiche per la rete: la _Binding Table_, la _Groups Table_ (per il multicast tra endpoint) e la _Address Map_.
+
+---
+
+![[Pasted image 20260714155036.png]]
+Questa slide illustra le tre topologie di rete supportate a livello Network (NWK) da Zigbee: **Star (Stella)**, **Tree (Albero)** e **Mesh (Maglia)**. Le prime due possono sfruttare la struttura a **Superframe (modalità beacon-enabled)** per sincronizzare i nodi, mentre la terza richiede tassativamente una **comunicazione senza struttura superframe (modalità non beacon-enabled)**.
+
+**Topologia a Stella (Star)**: Prevede un unico **Coordinatore centrale (PAN Coordinator)** al centro, a cui tutti gli altri dispositivi si collegano direttamente. In questa topologia non esiste il concetto di routing multi-hop: tutte le comunicazioni sono a singolo salto e avvengono esclusivamente tra il coordinatore e i nodi periferici. Tutti i nodi si sincronizzano con il superframe a partire dal Beacon emesso periodicamente dal coordinatore.
+
+**Topologia ad Albero (Tree)**: La rete si organizza in una struttura gerarchica padre-figlio. Il **Coordinatore Zigbee funge da radice**, i **Router sono i nodi interni** (che inoltrano i messaggi e possono avere nodi figli) e gli **End Device rappresentano le foglie**. L'instradamento dei pacchetti avviene in modalità _Tree Routing_, risalendo e scendendo l'albero logico in base agli indirizzi assegnati geometricamente ai dispositivi. Questa topologia può usare il Superframe, ma ciò richiede che ciascun router intermedio si sincronizzi rigorosamente con il frame di beacon del nodo del salto successivo.
+
+**Topologia a Maglia (Mesh)**: È una topologia _peer-to-peer_ arbitraria in cui ogni router (FFD) può stabilire un collegamento diretto con qualsiasi altro router nel suo raggio di copertura. Se un percorso si interrompe, la rete è in grado di ricalcolare dinamicamente una nuova rotta (_self-healing_). **La topologia Mesh non permette l'uso del Superframe**. Sincronizzare i beacon lungo maglie arbitrarie e dinamiche sarebbe computazionalmente impraticabile. Poiché la rete lavora in modalità asincrona (_non beacon-enabled_), **i router della Mesh non possono spegnere la radio e devono rimanere Sempre Accesi (Always ON)** per garantire l'instradamento immediato dei pacchetti, impedendo il risparmio energetico sui nodi di routing. Solo gli End Device (le foglie terminali) possono addormentarsi, svegliandosi saltuariamente per interrogare il proprio router di riferimento tramite polling asincrono (_Data Request_).

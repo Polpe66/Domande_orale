@@ -8,18 +8,6 @@
         "type": "tabs",
         "children": [
           {
-            "id": "c9465570ac8eec8c",
-            "type": "leaf",
-            "state": {
-              "type": "pdf",
-              "state": {
-                "file": "MCPS/Chessa/Immagini_chessa.pdf"
-              },
-              "icon": "lucide-file-text",
-              "title": "Immagini_chessa"
-            }
-          },
-          {
             "id": "5f9dfa150fc90ed1",
             "type": "leaf",
             "state": {
@@ -43,6 +31,18 @@
               },
               "icon": "lucide-file-text",
               "title": "Appunti_chessa"
+            }
+          },
+          {
+            "id": "e26416c7c462f650",
+            "type": "leaf",
+            "state": {
+              "type": "pdf",
+              "state": {
+                "file": "MCPS/Chessa/Immagini_chessa.pdf"
+              },
+              "icon": "lucide-file-text",
+              "title": "Immagini_chessa"
             }
           }
         ],
@@ -103,8 +103,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "right": {
     "id": "12338b9b9a262783",
@@ -220,12 +219,15 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "5f9dfa150fc90ed1",
+  "active": "53e87b7029b663ac",
   "lastOpenFiles": [
-    "MCPS/images/Pasted image 20260714120907.png",
+    "MCPS/Chessa/Immagini_e_Risposte.md",
+    "MCPS/images/Pasted image 20260714155036.png",
     "MCPS/Chessa/Appunti_chessa.pdf",
     "MCPS/Chessa/Immagini_chessa.pdf",
-    "MCPS/Chessa/Immagini_e_Risposte.md",
+    "MCPS/images/Pasted image 20260714152307.png",
+    "MCPS/images/Pasted image 20260714151136.png",
+    "MCPS/images/Pasted image 20260714120907.png",
     "MCPS/images/Pasted image 20260714105716.png",
     "MCPS/images/Pasted image 20260714095131.png",
     "MCPS/images/Pasted image 20260714092146.png",
@@ -241,10 +243,6 @@
     "MCPS/Chessa",
     "MCPS/images/Pasted image 20260623183835.png",
     "MCPS/Immagini Paganelli.md",
-    "MCPS/images/Pasted image 20260623181841.png",
-    "MCPS/images/Pasted image 20260623175329.png",
-    "MCPS/images/Pasted image 20260623170214.png",
-    "MCPS/images/Pasted image 20260623162111.png",
     "MCPS/Esame Paganelli.pdf",
     "MCPS/build/appunti.md",
     "MCPS/Esame Chessa.md",
