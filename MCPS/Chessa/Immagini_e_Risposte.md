@@ -243,3 +243,55 @@ La ZCL adotta un **paradigma Client-Server**:
 ![[Pasted image 20260715111736.png]]
 
 
+I dispositivi IoT sono tipicamente caratterizzati da forti vincoli in termini di memoria, potenza di calcolo, energia e larghezza di banda. Progettare in questo ambito impone il superamento di sfide quali:
+
+- **L'efficienza energetica**, per massimizzare la vita utile del dispositivo in assenza di alimentazione fissa.
+- **L'adattabilità**, per rispondere al cmabiamento delle condizioni ambientali e di rete.
+- **La bassa complessità protocollare**, riducendo al minimo l'overhead.
+- **La comunicazione multi-hop**, necessaria a causa della bassa potenza trasmissiva dei nod.
+- **Le tecniche di local storage e pre-processing**, utili a elaborare i dati a bordo del nodo per ridurre al minimo le trasmissioni radio.
+
+Spesso ci si chiede se l'evoluzione tecnologica legata alla **Legge di Moore** (che prevede il raddoppio del numero di transistor integrabili economicamente in un chip ogni due anni) possa risolvere questi vincoli. La risposta è: non necessariamente. Nell'ambito IoT, la legge di Moore si applica secondo tre diverse interpretazioni:
+
+1. Le performance raddoppiano a parità di costo (tipico dei server/desktop).
+2. La dimensione del chip si dimezza a parità di costo, riducendo anche i consumi energetici.
+3. La dimensione e la potenza rimangono costanti, ma il costo si dimezza.
+
+Nello scenario IoT, l'enfasi ricade prevalentemente sulla seconda e sulla terza interpretazione. A causa dell'effetto scala (legato all'altissimo numero di dispositivi prodotti), si preferisce utilizzare microcontrollori non all'avanguardia, bensì chip maturi, estremamente economici e miniaturizzati, che consumino il meno possibile.
+
+Il vero collo di bottiglia fisico dell'IoT risiede nel confronto **"Intel vs Duracell"**: mentre la capacità di calcolo cresce in modo esponenziale, la densità energetica delle batterie aumenta solo linearmente. La soluzione ingegneristica consiste quindi nel minimizzare sistematicamente lo spreco energetico sfruttando la natura tipicamente ciclica e ripetitiva dei task applicativi (campionamento, elaborazione locale, memorizzazione e trasmissione/ricezione).
+
+Questa alternanza tra periodi di attività e di inattività consente di formalizzare il Duty Cycle (**dc**), definito come la frazione del periodo totale T in cui un dispositivo o un suo singolo componente si trova in stato attivo.
+
+Poiché i consumi cambiano drasticamente a seconda dello stato, l'obiettivo è mantenere il duty cycle applicativo il più basso possibile, congelando le componenti del sistema quando non necessarie.
+
+**La formalizzazione matematica dell'energia e della vita utile:**
+
+Nei sistemi CPS in corrente continua la differenza di potenziale (tensione in Volt) è pressoché costante. Di conseguenza, la potenza e l'energia dipendono linearmente solo dalla corrente (espressa in Ampere). Possiamo quindi misurare l'energia consumata in milliampere-ora (mAh).
+
+La spesa energetica totale per ciclo ($E_t$​) è data dalla somma dei contributi energetici di ogni singolo sottosistema:
+
+$E_t = E_{\text{processore}} + E_{\text{sensore}} + E_{\text{radio}} + E_{\text{logger}}$
+
+Ciascun contributo viene calcolato pesando l'energia spesa nello stato attivo ($C_{\text{attivo}}$​) e in quello di sleep ($C_{\text{sleep}}$) per i rispettivi duty cycle. Ad esempio, per il processore:
+
+$E_{\text{processore}} = C_{\text{attivo}} \cdot DC_{\text{attivo}} + C_{\text{sleep}} \cdot (1 - DC_{\text{attivo}})$
+
+Per componenti con stati attivi multipli, come la radio (che prevede trasmissione, ricezione e sleep):
+
+$E_{\text{radio}} = C_{\text{tx}} \cdot DC_{\text{tx}} + C_{\text{rx}} \cdot DC_{\text{rx}} + C_{\text{sleep}} \cdot (1 - DC_{\text{tx}} - DC_{\text{rx}})$
+
+Una volta calcolato il consumo totale $E_t$​, possiamo stimare la vita utile del dispositivo (**Lifetime**, LT) espressa in cicli di lavoro:
+
+$LT = \frac{B_0 - L}{E_{\text{totale}}}$
+
+Dove B0​ è la capacità iniziale della batteria (in mAh) e L rappresenta la perdita complessiva dovuta alle autoscariche (leakage) della batteria stessa durante il suo funzionamento.
+
+ Nella realtà, L non è una costante ma dipende strettamente dal tempo di vita stesso del dispositivo. Per questo motivo, l'autoscarica può essere modellata più fedelmente tramite un'equazione di ricorrenza in cui la carica residua al ciclo n (Bn​) tiene conto di una frazione di perdita costante per singolo ciclo (ϵ):
+
+$B_n=B_{\text{n-1}} * (1-ϵ)-E$
+
+Risolvendo questa ricorrenza, la vita utile del dispositivo in numero di cicli corrisponderà al valore di n. Anche se in realtà si ferma prima a causa dei limiti operativi.
+
+---
+![[Pasted image 20260715114750.png]]
