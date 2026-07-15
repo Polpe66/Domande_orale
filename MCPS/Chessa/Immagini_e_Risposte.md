@@ -148,8 +148,8 @@ Dopo aver recuperato la risposta dal MAC layer del device che si vuole collegare
 ![[Pasted image 20260714152307.png]]
 **L'Application Framework**: ospita fino a **240 Application Objects (APO)**, ciascuno dei quali rappresenta un'applicazione definita dall'utente (es. il controllo di una lampadina o la lettura di un sensore). A ogni APO è associato un **endpoint (da 1 a 240)**. Gli endpoint fungono da veri e propri **"cavi virtuali"** (equivalenti ai socket Unix), consentendo la coesistenza di profili, dispositivi e punti di controllo differenti all'interno di un unico nodo fisico. Ogni specifica applicazione nella rete è identificata univocamente dalla combinazione `<indirizzo di rete a 16 bit, endpoint>`.
 
- **Lo Zigbee Device Object (ZDO)**: si colloca tassativamente sull'**endpoint 0** ed è l'applicazione di gestione centrale del dispositivo. Lo ZDO è governato dallo _Zigbee Device Profile (ZDP)_ e ha il compito di coordinare i vari APO affinché si organizzino in un'applicazione distribuita. Fornisce quattro macro-servizi essenziali:
-    - **Device & Service Discovery**: permette di recuperare gli indirizzi fisici/logici dei nodi (Device) e di interrogarli per scoprire quali profili e servizi supportano (Service).
+ **Lo Zigbee Device Object (ZDO)**: si colloca sull'**endpoint 0** ed è l'applicazione di gestione centrale del dispositivo. Lo ZDO è governato dallo _Zigbee Device Profile (ZDP)_ e ha il compito di coordinare i vari APO affinché si organizzino in un'applicazione distribuita. Fornisce quattro macro-servizi :
+    - **Device & Service Discovery**: permette di recuperare gli indirizzi mac/rete dei nodi (Device) e di interrogarli per scoprire quali profili e servizi supportano (Service).
     - **Binding Management**: elabora le richieste per creare o rimuovere collegamenti logici nella Binding Table dell'APS, abilitando l'instradamento indiretto.
     - **Network & Node Management**: gestisce l'avvio della rete, le richieste di join/leave e il recupero delle tabelle di routing locali.
 
@@ -165,3 +165,81 @@ Questa slide illustra le tre topologie di rete supportate a livello Network (NWK
 **Topologia ad Albero (Tree)**: La rete si organizza in una struttura gerarchica padre-figlio. Il **Coordinatore Zigbee funge da radice**, i **Router sono i nodi interni** (che inoltrano i messaggi e possono avere nodi figli) e gli **End Device rappresentano le foglie**. L'instradamento dei pacchetti avviene in modalità _Tree Routing_, risalendo e scendendo l'albero logico in base agli indirizzi assegnati geometricamente ai dispositivi. Questa topologia può usare il Superframe, ma ciò richiede che ciascun router intermedio si sincronizzi rigorosamente con il frame di beacon del nodo del salto successivo.
 
 **Topologia a Maglia (Mesh)**: È una topologia _peer-to-peer_ arbitraria in cui ogni router (FFD) può stabilire un collegamento diretto con qualsiasi altro router nel suo raggio di copertura. Se un percorso si interrompe, la rete è in grado di ricalcolare dinamicamente una nuova rotta (_self-healing_). **La topologia Mesh non permette l'uso del Superframe**. Sincronizzare i beacon lungo maglie arbitrarie e dinamiche sarebbe computazionalmente impraticabile. Poiché la rete lavora in modalità asincrona (_non beacon-enabled_), **i router della Mesh non possono spegnere la radio e devono rimanere Sempre Accesi (Always ON)** per garantire l'instradamento immediato dei pacchetti, impedendo il risparmio energetico sui nodi di routing. Solo gli End Device (le foglie terminali) possono addormentarsi, svegliandosi saltuariamente per interrogare il proprio router di riferimento tramite polling asincrono (_Data Request_).
+
+---
+![[Pasted image 20260715092114.png]]
+Le relazioni genitore-figlio nel join costruiscono la topologia logica ad albero in cui il coordinator è la radice, i nodi interni i router e le foglie end device/router.
+
+Grazie a questa struttura possiamo assegnare gli indirizzi da 16 bit; al momento della configurazione della rete nel coordinator vengono fissati tre parametri: $D_m$, $R_m$ e $L_m$.
+
+$D_m$ rappresenta il numero massimo di end device (RFD) che ciascun router/coordinator può avere, $R_m$ il numero massimo di router che un router/coordinator può avere e $L_m$ la profondità massima raggiungibile.
+
+Questi tre parametri permettono l'assegnazione statica degli indirizzi in maniera gerarchica.
+
+Il router al join riceve un range di indirizzi in base al router a cui si attacca come riferimento padre, e l'end device riceve un solo ID.
+
+Il numero massimo di indirizzi con 16 bit è 65536.
+
+Ovviamente più in alto nell'albero si collega il dispositivo, minore è il numero di hop; anche se assegniamo gli indirizzi ad albero, la topologia potrebbe essere mesh.
+
+Definiamo l'ampiezza dell'intervallo, ovvero il numero di indirizzi assegnati al router/coordinator incluso il proprio, come:
+
+se $L_m=d \rightarrow C(d)=1$
+
+altrimenti $C(d) = 1 + R_m \cdot C(d+1) + D_m$
+
+In questa immagine abbiamo che con $R_m=2$, $D_m=2$ e $L_m=3$, viene:
+- $C(3)=1$
+- $C(2)=1+2 \cdot 1+2=5$
+- $C(1)=1+2 \cdot 5+2=13$
+- $C(0)=1+2 \cdot 13+2=29$
+
+Di conseguenza l'intervallo del coordinatore è $[0,28]$.
+
+Questo schema permette il **Tree Routing**, un meccanismo di instradamento efficiente e a costo di memoria nullo, poiché i nodi non necessitano di tabelle di routing. Quando un router con indirizzo A riceve un pacchetto per la destinazione D, verifica se D è un suo discendente controllando se A<D<A+C(d). 
+
+In caso positivo inoltra il pacchetto verso il basso al rispettivo figlio; in caso negativo, si limita a passare il pacchetto verso l'alto al proprio genitore. Questa modalità consente inoltre l'uso del superframe e della sincronizzazione tramite beaconing lungo i salti.
+
+Bisogna però sottolineare che questo modello di indirizzamento è molto **rigido**. Se un ramo dell'albero satura i propri indirizzi a causa del limite geometrico, i nuovi dispositivi riceveranno un rifiuto di associazione (_association rejected_), anche se altre porzioni della rete possiedono ampi intervalli di indirizzi inutilizzati. Per ovviare a questo limite, Zigbee permette l'adozione del **Mesh Routing**, il quale mappa una topologia fisica a maglia basandosi sul protocollo dinamico ad-hoc **AODV**, rinunciando tuttavia alla sincronizzazione tramite superframe.
+
+---
+![[Pasted image 20260715095449.png]]
+Nello standard Zigbee, il **Binding** rappresenta un collegamento logico unidirezionale tra un endpoint (APO) sorgente e uno o più endpoint di destinazione (o gruppi multicast) situati su altri nodi della rete.
+
+Questo meccanismo è fondamentale per abilitare il **Routing Indiretto (****Indirect Addressing****)**, una modalità in cui il dispositivo sorgente specifica la destinazione in modo del tutto implicito. Normalmente, i messaggi vengono instradati in modo diretto tramite la tupla `<network address, endpoint>` del destinatario. Tuttavia, per dispositivi estremamente semplici, memorizzare e mantenere aggiornate le tabelle di routing è computazionalmente proibitivo, specialmente in scenari IoT in cui gli indirizzi di rete a 16-bit vengono riassegnati dinamicamente dal parent a seguito di leave o nuovi join. 
+
+Per ovviare a questo problema l'APS (Application Support Sublayer) gestisce e fa cooperare due tabelle fondamentali:
+di volatilità, 
+1. **La APS Binding Table**: Memorizzata nell'APS del coordinatore e/o dei router, viene configurata e aggiornata su esplicita richiesta dello **ZDO (Zigbee Device Object)** tramite le primitive `BIND.request` e `UNBIND.request`. La Binding Table associa le sorgenti e le destinazioni basandosi esclusivamente sui loro **indirizzi fisici IEEE MAC a 64-bit**, che sono cablati in fabbrica e non cambiano mai. Ogni voce (entry) della tabella è strutturata come una tupla contenente: _indirizzo MAC sorgente, endpoint sorgente, Cluster ID_ (la funzionalità, es. On/Off), _indirizzo di destinazione MAC_ (o indirizzo di gruppo a 16-bit per il multicast) e _endpoint di destinazione_.
+2. **La APS Address Map**: È la tabella che associa in tempo reale l'indirizzo fisico IEEE MAC a 64-bit di ciascun dispositivo con il suo indirizzo di rete logico corto a 16-bit (NWK address) attualmente attivo. Se un dispositivo si disconnette e si ricollega ottenendo un indirizzo a 16-bit differente, invia un annuncio sulla rete; tutti i nodi ricevono la notifica e aggiornano la propria Address Map interna, preservando intatti i binding applicativi precedentemente configurati senza bisogno di alcun intervento manuale.
+
+Grazie a questa architettura, quando un'applicazione su un nodo limitato deve inviare un dato, esegue un'operazione asincrona inviando un messaggio ad indirizzamento indiretto in cui specifica soltanto il **proprio endpoint locale e il Cluster ID**(**identificatore a 16 bit** che definisce univocamente quella specifica interfaccia di funzionalità all'interno di un determinato profilo applicativo) della funzionalità. 
+Il pacchetto viene preso in carico dal coordinatore o router che effettua una **risoluzione in due stadi**:
+
+- Interroga la **Binding Table** usando la tupla `<MAC sorgente, EP sorgente, Cluster ID>` per ricavare il MAC e l'endpoint del destinatario.
+- Interroga la **Address Map** per tradurre quel MAC di destinazione a 64-bit nel corrispondente indirizzo di rete a 16-bit attualmente attivo, potendo così instradare fisicamente il pacchetto radio sulla rete.
+
+---
+![[Pasted image 20260715104301.png]]
+Un **Cluster** rappresenta un protocollo di interazione standardizzato. Informalmente, esso fornisce l'accesso a un determinato servizio o funzionalità di un _Application Object (APO)_ (ad esempio, l'azione di spegnere una luce). Nel caso più semplice può ridursi a un singolo messaggio. Ogni Cluster è identificato da un **ID a 16 bit** e definisce due elementi fondamentali: **attributi:** che memorizzano e mostrano lo stato del dispositivo in quel cluster (es. lo stato On/Off) e i **comandi:** che causano un'azione sul dispositivo manipolandone gli attributi.
+
+Un **Application Profile** è invece la specifica del comportamento di un'intera classe di applicazioni che cooperano su più dispositivi Zigbee (es. _Home Automation_, con Profile ID `0x0104`). Ogni profilo ha un ID univoco a 16 bit assegnato dalla Zigbee Alliance. Profili differenti possono coesistere contemporaneamente sullo stesso dispositivo fisico.
+
+Il **Device ID** rappresenta una codifica "human-readable" del tipo di dispositivo (ad esempio, ci dice se l'hardware è una lampada o un forno). È fondamentale sottolineare che **il Device ID non dice in alcun modo come comunicare con il dispositivo; questo ruolo è esclusivamente dei Cluster ID e Profile ID**. Infatti, Zigbee effettua il _Service Discovery_ nella rete basandosi rigorosamente su profili e cluster, ignorando il Device ID.
+![[Pasted image 20260715105314.png|315]]
+
+Per evitare che gli sviluppatori debbano riprogrammare da zero funzioni comuni, la **Zigbee Cluster Library (ZCL)** funge da repository centralizzato di funzionalità standardizzate, garantendo l'interoperabilità tra dispositivi di produttori diversi. 
+La ZCL adotta un **paradigma Client-Server**:
+
+- Il **Server** è il dispositivo che memorizza fisicamente gli attributi di stato (es. la lampadina).
+- Il **Client** è il dispositivo che interroga o manipola tali attributi inviando comandi (es. l'interruttore). La ZCL definisce inoltre messaggi generici per leggere/scrivere attributi, configurare report di aggiornamento automatico o scoprire quali attributi sono supportati dal server.
+
+**Analisi dell'immagine (Esempio On/Off Lighting):** Il diagramma mostra l'applicazione reale di questi concetti nel dominio funzionale del _Lighting_. Abbiamo un interruttore (_On/Off Switch_) accoppiato a una lampada semplice (_Simple Lamp_), e un regolatore (_Dimmer Switch_) accoppiato a una lampada dimmerabile (_Dimmable Lamp_).
+
+- Le lampade fungono da **ZCL Server** poiché memorizzano lo stato On/Off e il livello di luminosità.
+- Gli switch fungono da **ZCL Client** poiché inviano i comandi applicativi.
+- Il **Configuration Tool** interviene nella fase di installazione agendo come un client di configurazione: il suo compito è **popolare la Binding Table** del coordinatore o dei router.
+---
+![[Pasted image 20260715111736.png]]
+
+
