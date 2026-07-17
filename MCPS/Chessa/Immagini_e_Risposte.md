@@ -12,7 +12,7 @@ Ci sono diversi tipi di soluzioni:
 Infine, come mostrato nell'immagine, esiste una soluzione che prevede l'uso di **integration gateway**, i quali permettono di far coesistere diversi vendor e diversi protocolli all'interno della rete. Non si limita a tradurre i protocolli a basso livello, ma mappa i differenti comportamenti applicativi dei vari dispositivi.
 In questo specifico caso, abbiamo un **integration gateway distribuito**. Questa soluzione mappa i messaggi in un protocollo intermedio e poi nel protocollo richiesto dal vendor.
 questa specifica soluzione permette di avere $2n$ possibili mapping invece di $n^2$ (come avverrebbe nel caso di una soluzione con un unico integration gateway non distribuito).
-Nella **configurazione Type C** (integrazione diretta) ogni protocollo deve tradursi verso tutti gli altri, richiedendo n(n−1)≈n2 mappature punto-a-punto. Nella **configurazione Type D**, l'introduzione di un **protocollo intermedio comune** riduce la complessità a sole 2n mappature, poiché ciascun protocollo deve essere tradotto solo "da" e "verso" la lingua comune.
+Nella **configurazione Type C** (integrazione diretta) ogni protocollo deve tradursi verso tutti gli altri, richiedendo n(n−1)≈$n^2$ mappature punto-a-punto. Nella **configurazione Type D**, l'introduzione di un **protocollo intermedio comune** riduce la complessità a sole 2n mappature, poiché ciascun protocollo deve essere tradotto solo "da" e "verso" la lingua comune.
 
 Le limitazioni di una soluzione non interoperabile nel mondo IoT risiedono nel fatto che manca scalabilità in termini di business, e coloro che traggono vantaggio dal mantenere la non interoperabilità sono le grandi compagnie.
 

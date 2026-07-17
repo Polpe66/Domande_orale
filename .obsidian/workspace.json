@@ -59,7 +59,8 @@
               "title": "MCPS_questions_Chessa"
             }
           }
-        ]
+        ],
+        "currentTab": 3
       }
     ],
     "direction": "vertical"
@@ -232,17 +233,17 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "5f9dfa150fc90ed1",
+  "active": "34a6003a106fcd96",
   "lastOpenFiles": [
     "MCPS/Chessa/Appunti_chessa.pdf",
-    "MCPS/Chessa/Immagini_chessa.pdf",
     "MCPS/Chessa/Immagini_e_Risposte.md",
+    "MCPS/Chessa/MCPS_questions_Chessa.md",
+    "MCPS/Chessa/Immagini_chessa.pdf",
     "MCPS/images/Pasted image 20260716191245.png",
     "MCPS/images/Pasted image 20260716172301.png",
     "MCPS/images/Pasted image 20260716151603.png",
     "MCPS/images/Pasted image 20260716121745.png",
     "MCPS/images/Pasted image 20260716114224.png",
-    "MCPS/Chessa/MCPS_questions_Chessa.md",
     "MCPS/images/Pasted image 20260716111853.png",
     "MCPS/images/Pasted image 20260716102840.png",
     "MCPS/images/Pasted image 20260715174344.png",
