@@ -224,25 +224,183 @@ I topic che iniziano con il carattere dolalro (come `$SYS/broker/clients/total`)
 ---
 
 - Spiega il processo di Join in ZigBee. 
+	In Zigbee, un dispositivo può entrare a far parte di una rete esistente principalmente in due modi: tramite **Direct Join** (avviato dal padre) o tramite **Join through Association** (avviato dal figlio che desidera associarsi).
+	
+	Il processo di **Join per Associazione (Child-Side)** si articola in tre macro-fasi protocollari, attraversando l'intero stack (Application Layer, Network Layer e MAC Layer):
+
+	1. **Inizio dell'Application Layer:** L'applicazione del dispositivo che vuole fare il join invoca la primitiva **NETWORK-DISCOVERY.request**, inviandola al livello inferiore (Network Layer - NWK).
+	2. **Richiesta di Scansione:** Il Network Layer traduce questa chiamata ed emette una primitiva **SCAN.request** verso il livello MAC.
+	3. **Active Scan a livello radio:** Il livello MAC esegue fisicamente un **Active Scan** (scansione attiva) inviando dei _Beacon Request_ nell'etere e ascoltando i _Beacon_ emessi dai Coordinatori o dai Router attivi nelle vicinanze.
+	4. **Raccolta dei risultati:** Una volta completata la scansione, il MAC risponde al livello superiore con la primitiva **SCAN.confirm**, contenente la lista dei PAN ID rilevati, dei canali radio e della potenza del segnale (LQI).
+	5. **Notifica all'Applicazione:** Il Network Layer propaga queste informazioni all'Application Layer tramite la primitiva **NETWORK-DISCOVERY.confirm**.
+	6. **Selezione della Rete:** L'Application Layer analizza la lista dei nodi vicini, sceglie la PAN a cui collegarsi (cercando di associarsi al dispositivo più in alto possibile nell'albero per minimizzare gli hop) e invoca la primitiva **JOIN.request**. Questa primitiva contiene due parametri fondamentali:
+	    - Il **PAN Identifier** della rete selezionata.
+	    - Un flag che indica se il dispositivo si sta associando come **Router** o come **End Device**.
+	7. **Inizio dell'Associazione:** Ricevuta la richiesta, il Network Layer individua il nodo padre target (un Router o il Coordinatore) e invoca la primitiva MAC **ASSOCIATE.request**.
+
+	Questa è la parte più critica, regolata dallo standard IEEE 802.15.4, e si basa sulla **comunicazione indiretta** per consentire il risparmio energetico:
+
+	1. **Invio della Richiesta:** Il MAC del dispositivo invia un frame fisico di **Association request** al nodo padre.
+	2. **ACK di Ricezione:** Il MAC del padre risponde immediatamente con un **ACK** di livello fisico. _Attenzione:_ questo ACK conferma solo la corretta ricezione del pacchetto, ma **non** significa che l'associazione sia stata accettata.
+	3. **Decisione del Padre:** Il MAC del padre inoltra la richiesta al proprio Network Layer tramite la primitiva **ASSOCIATE.indication**. Il Network Layer decide se accettare il nodo (verificando di non aver superato i limiti Rm​ o Dm​ di figli gestibili) e, in caso positivo, **calcola matematicamente e assegna al nuovo figlio uno short address a 16 bit**. Quindi, invoca la primitiva **ASSOCIATE.response**.
+	4. **La fase di Polling:** Poiché l'associazione è una transazione indiretta, il dispositivo figlio non rimane in ascolto continuo per non consumare batteria. Esso attende un tempo prefissato (**Pre-defined waiting time**) e poi invia attivamente una **Data request** (operazione di _polling_) per chiedere se ci sono risposte pendenti per lui.
+	5. **Consegna dell'Indirizzo:** Al ricevimento della _Data request_, il MAC del padre invia finalmente il frame di **Association response** contenente lo short address a 16 bit appena assegnato.
+	6. **Conferma Finale:** Il figlio risponde con un **ACK**. Il suo livello MAC genera una primitiva **ASSOCIATE.confirm** per il livello NWK, il quale chiude la transazione verso l'applicazione con la primitiva **JOIN.confirm** con stato di _Success_. Da questo momento in poi, il dispositivo utilizzerà lo short address a 16 bit per ogni comunicazione nella rete
+	
+    ---
     
-        
-    - Qual è il risultato di uno scan? Come fa un dispositivo a scegliere a quale PAN ID associarsi?
-        
-    - _Domanda trabocchetto:_ Perché c'è una "Data Request" dal client verso il router durante il join? (Risposta: Per comunicare serve un indirizzo di rete, il client ne è ancora sprovvisto, quindi deve essere lui a inizializzare lo scambio per farsi assegnare lo short address).
-        
-    - Disegna il diagramma dell'Associate Request.
-        
-- **Livelli e Superframe (IEEE 802.15.4):**
+	
+	
+- Qual è il risultato di uno scan? Come fa un dispositivo a scegliere a quale PAN ID associarsi?
+	    L'operazione di scansione viene avviata a livello applicativo tramite l'invocazione della primitiva **NETWORK-DISCOVERY.request**. Il livello Network (NWK) riceve la chiamata e la traduce per il livello inferiore inviando una primitiva **SCAN.request** al livello MAC.
+
+	Il livello MAC esegue fisicamente un **Active Scan** (scansione attiva) nell'etere trasmettendo frame di _Beacon Request_ e ascoltando i _Beacon_ emessi dai Coordinatori o dai Router attivi nel vicinato. Al termine, il MAC risponde al livello Network con la primitiva **SCAN.confirm**, la quale risale infine all'applicazione sotto forma di primitiva **NETWORK-DISCOVERY.confirm**.
+
+	Il risultato contenuto in questa conferma è una lista dettagliata di tutte le reti personali (PAN) rilevate nel raggio di copertura radio del dispositivo, la quale specifica per ciascuna:
+
+	- Il **PAN ID** (Personal Area Network Identifier) della rete attiva rilevata.
+	- L'**indirizzo a 64-bit** (o lo short address) del dispositivo coordinatore o del router che ha emesso il beacon, che si propone come potenziale nodo padre (P).
+	- Il **canale radio** su cui la rete sta operando e l'indicazione di quanto tale canale sia disturbato o rumoroso (Energy Detection).
+
+	Una volta ricevuta la lista delle reti disponibili il livello applicativo seleziona la PAN a cui desidera connettersi e avvia la primitiva **JOIN.request**.
+
+	La selezione del nodo padre specifico (P) all'interno del vicinato radio e il ruolo con cui il dispositivo entrerà nella rete dipendono strettamente dalla topologia logica adottata:
+
+- **In una topologia a stella (Star Topology):** La scelta è obbligata. Il nodo padre P deve essere tassativamente il **Coordinatore** della PAN, e il dispositivo richiedente può associarsi esclusivamente con il ruolo di **End Device**.
+- **In una topologia ad albero o mesh (Tree/Mesh Topology):** Il nodo padre P può essere sia il **Coordinatore** della rete sia uno dei **Router** attivi. Il dispositivo può scegliere se effettuare il join come _Router_ (se ha capacità di Full Function Device per estendere la rete) o come _End Device_ (Reduced Function Device).
+
+---
+
+-  _Domanda trabocchetto:_ Perché c'è una "Data Request" dal client verso il router durante il join? (Risposta: Per comunicare serve un indirizzo di rete, il client ne è ancora sprovvisto, quindi deve essere lui a inizializzare lo scambio per farsi assegnare lo short address).
+	In una rete wireless constrained, **il genitore non può fare** **push** **della risposta** perché non sa se in quel preciso millisecondo il client ha la radio accesa o se è in sleep per risparmiare batteria. Lo standard IEEE 802.15.4 risolve questo problema spostando l'iniziativa della transazione sul client (modello **PULL**): è sempre il dispositivo che deve ricevere il dato a dover dichiarare di essere sveglio e pronto all'ascolto tramite l'invio della **Data Request**.
+	Inoltre non dispone ancora delll'indirizzo dir ete per comunciare e quindi il apdre non può comunciare direttametne col figlio
+	
+---
+
+- Disegna il diagramma dell'Associate Request.
+	
+![[Pasted image 20260717172134.png]]
+
+---
     
-    - Architettura generale e come si trova il canale giusto a cui connettersi.
-        
-    - Livello di Rete (Immagine: ZigBee IV): Cosa rappresenta il grafo? Dimensionamento dell'albero (max-depth, ecc.).
+- Architettura generale e come si trova il canale giusto a cui connettersi.
+	Il processo di creazione di una nuova rete personale wireless (PAN) è noto come **Network Formation** ed è ad esclusivo carico di un dispositivo di tipo FFD (_Full Function Device_) che assumerà il ruolo di **Zigbee Coordinator (ZC)**.
+
+	A livello di stack protocollare, l'inizializzazione si sviluppa attraverso i seguenti passaggi gerarchici:
+
+1. L'applicazione sul Coordinatore avvia la procedura invocando la primitiva **NETWORK-FORMATION.request** a livello Network (NWK).
+2. Il Network Laye interroga il livello sottostante inviando una primitiva MAC **SCAN.request**. Questa primitiva richiede di effettuare una scansione dei canali radio disponibili nello spettro elettromagnetico.
+
+	Per trovare il canale perfetto (quello con meno interferenze e senza conflitti logici), lo standard IEEE 802.15.4 prevede l'esecuzione sequenziale di **due diverse tipologie di scansione** gestite dal livello MAC:
+
+	A. Scansione di Energia (Energy Detection - ED Scan)
+	 _"Qual è il canale fisico meno rumoroso?"_.
+	- **Funzionamento:** Il ricetrasmettitore radio si sintonizza uno dopo l'altro su tutti i canali supportati dalla propria banda di frequenza (ad esempio i 16 canali della banda a 2.4 GHz). Per ciascun canale, misura la potenza del segnale elettromagnetico presente nell'aria (rumore di fondo, interferenze da Wi-Fi, Bluetooth o forni a microonde) senza decodificare alcun pacchetto.
+	- **Risultato:** Restituisce una lista di valori di energia per ogni canale. Il Network Layer scarterà i canali che superano una certa soglia di rumore, selezionando un sottoinsieme di **canali candidati a bassa energia** (i meno rumorosi).
+
+	B. Scansione Attiva (Active Scan)
+	_"Ci sono già altre reti attive nel mio vicinato su questi canali?"_.
+	- **Funzionamento:** Nei canali candidati selezionati al passo precedente, il livello MAC trasmette un frame di **Beacon Request** e mantiene la radio accesa in ascolto. Se su quel canale opera già una rete in modalità _beacon-enabled_, il rispettivo Coordinatore risponderà inviando un **Beacon Frame**.
+	- **Risultato:** Il livello MAC raccoglie tutte le risposte dei beacon ricevuti e compila una tabella che rimanda al Network Layer tramite la primitiva **SCAN.confirm**. Questa tabella contiene i **PAN ID** (Personal Area Network Identifier) e gli indirizzi delle reti già esistenti nell'area geografica.
+
+
+	Una volta che il Network Layer del Coordinatore riceve la `SCAN.confirm` con i risultati dei due scan, esegue le scelte strategiche finali:
+
+	1. Sceglie il canale che ha registrato il livello di rumore elettromagnetico minore.
+	2. **Sceglie un identificatore di rete a 16 bit (PAN ID) che sia **completamente unico
+
+    - Il Coordinatore assegna a se stesso l'indirizzo di rete statico di default **0x0000**.
+    - Invia una primitiva **SET.request** al livello MAC per configurare nel chip radio il PAN ID scelto e l'indirizzo `0x0000`.
+    - Infine, invoca la primitiva **START.request**. Da questo momento, il livello MAC del Coordinatore inizia a trasmettere periodicamente i propri **Beacon Frame**, rendendo la nuova rete visibile e pronta ad accettare richieste di join da parte di router e dispositivi figli
+
+---
+
+- Livello di Rete (Immagine: ZigBee IV): Cosa rappresenta il grafo? Dimensionamento dell'albero (max-depth, ecc.).
+	Il grafo rappresenta la **topologia logica ad albero simmetrico (****Symmetrical Tree****)** della rete Zigbee, utilizzata per l'**assegnazione distribuita, deterministica e decentralizzata** degli indirizzi di rete a 16 bit (_short addresses_).
+	
+	**I Ruoli Logici nel Grafo:**
+    - **La Radice (Coordinatore):** Rappresenta il punto di partenza della rete (indirizzo fisso `0x0000`).
+    - **I Nodi Interni (Router):** Fungono da ripetitori e padri attivi che distribuiscono gli indirizzi ai propri figli.
+    - **Le Foglie (End Devices):** Dispositivi terminali che non possono avere figli né fare routing.
+    - **La Suddivisione in Blocchi (****Addressing Range****):** Il grafo mostra visivamente come ogni Router riceva dal proprio genitore un **range (o blocco) contiguo di indirizzi**. Il router utilizzerà questo blocco per assegnare gli indirizzi ai propri figli router e end-device.
+    - **La distinzione semantica degli intervalli:** Accanto a ogni nodo router è indicato il suo indirizzo e, tra parentesi quadre, il suo intervallo di competenza (es. `1` o `14`). Questo range definisce l'intero sotto-albero logico governato da quel router.
+    
+    - La struttura geometrica dell'albero è definita rigidamente e staticamente all'inizio (sul Coordinatore) tramite tre parametri:
+
+	- Rm​ **(Max Routers):** Il numero massimo di router figli che ciascun Coordinatore o Router può associare direttamente.
+	- Dm​ **(Max End Devices):** Il numero massimo di dispositivi terminali (end-device) figli che ciascun Coordinatore o Router può ospitare direttamente.
+	- Lm​ **(Max Depth / max-depth):** La profondità (o livello) massima dell'albero. La radice (Coordinatore) si trova a profondità d=0, mentre le foglie più lontane si trovano a d=L
+---
+
+- Come fa un end-device a ricevere messaggi dal coordinatore?
+	Nei sistemi wireless a bassa potenza basati sullo standard **IEEE 802.15.4** e **Zigbee**, un **End Device** (dispositivo di tipo RFD - _Reduced Function Device_) è progettato per rimanere in modalità di sleep profondo per la maggior parte del tempo al fine di preservare la batteria. Poiché un dispositivo con la radio spenta non può ricevere alcuna comunicazione dall'esterno, **il Coordinatore (o un Router genitore) non può inviare messaggi in modalità** **push** **diretta**.
+
+	Per risolvere questo problema, il trasferimento dati da Coordinatore a End Device è interamente **basato su un modello di polling (****pull-based****)** gestito a livello MAC. Il funzionamento dettagliato varia a seconda della modalità di accesso al canale della rete:
+
+	Trasferimento in reti sincronizzate (Beacon-Enabled)
+
+	Nelle reti che utilizzano una struttura di **Superframe** regolata dall'invio periodico di **Beacon** da parte del Coordinatore, il processo si articola nelle seguenti fasi:
+
+	1. **Bufferizzazione:** Il Coordinatore riceve un messaggio destinato all'End Device, lo memorizza temporaneamente nel proprio buffer e **segnala la presenza di dati pendenti** all'interno dell'apposito campo (_Pending Address List_) del successivo **Beacon Frame**.
+	2. **Ascolto del Beacon:** L'End Device si sveglia periodicamente in corrispondenza dell'inizio del Superframe per ricevere e decodificare il Beacon.
+	3. **Rilevamento del dato:** L'End Device analizza il Beacon. Se identifica il proprio indirizzo nella lista dei nodi con messaggi pendenti, capisce che il Coordinatore ha dati per lui.
+	4. **Richiesta Dati (Polling):** Durante il periodo ad accesso conteso (**CAP - Contention Access Period**), l'End Device invia un frame di **Data Request** al Coordinatore utilizzando il protocollo CSMA-CA slottato.
+	5. **ACK del Coordinatore:** Il Coordinatore riceve la richiesta e risponde immediatamente con un pacchetto di **ACK (Acknowledgement)** per confermare la ricezione.
+	6. **Invio del Messaggio:** Il Coordinatore estrae il messaggio dal buffer e lo trasmette all'End Device in uno slot successivo del CAP.
+	7. **ACK del Dispositivo:** L'End Device riceve il frame dati e invia un **ACK obbligatorio** al Coordinatore. Ricevuto questo ACK, il Coordinatore elimina definitivamente il messaggio dal proprio buffer.
+
+
+	 Trasferimento in reti asincrone (Non Beacon-Enabled)
+
+	Nelle reti che non utilizzano la struttura a Superframe, il Coordinatore non trasmette Beacon. Di conseguenza, l'End Device non ha modo di sapere in anticipo se ci sono messaggi pronti per lui e la procedura si svolge in modo totalmente asincrono:
+
+	1. **Bufferizzazione silenziosa:** Il Coordinatore riceve il messaggio per il figlio, lo memorizza in memoria e attende passivamente che sia il dispositivo a farsi vivo.
+	2. **Polling periodico:** L'End Device si sveglia a intervalli temporali definiti dall'applicazione e invia "alla cieca" un frame di **Data Request** al Coordinatore, sfruttando il protocollo CSMA-CA non slottato.
+	3. **ACK del Coordinatore:** Il Coordinatore risponde immediatamente con un ACK per bloccare il timeout radio dell'End Device.
+	4. **Verifica e Risposta:**
+	    - **Se ci sono messaggi pendenti:** Il Coordinatore estrae il dato dal buffer e lo trasmette all'End Device.
+	    - **Se NON ci sono messaggi pendenti:** Il Coordinatore invia un frame vuoto (_empty packet_) con un payload nullo per notificare al dispositivo che può tornare a dormire.
+	5. **Chiusura:** L'End Device conferma la corretta ricezione del messaggio inviando un ACK finale, permettendo al Coordinatore di scartare il pacchetto spedito
+
+---
+
+- **Binding:** Cosa è un binding? Perché si usano indirizzi a 64-bit? Cos'è l'Address Map? (Immagine: ZigBee V).
+	L'**APS Binding** (collegamento) è un meccanismo del livello **Application Support Sublayer (APS)** di Zigbee che consente di connettere logicamente un Endpoint applicativo (APO) situato su un nodo a uno o più Endpoint situati su altri nodi della rete.
+
+	Il funzionamento si basa su queste caratteristiche chiave:
+
+	- **Unidirezionalità:** Il collegamento è strettamente unidirezionale (va da una sorgente a una o più destinazioni).
+	- **Configurazione centralizzata:** Può essere configurato solo dal **Zigbee Device Object (ZDO)** del Coordinatore o di un Router (tipicamente durante la fase di deployment iniziale). La primitiva `BIND.request` accetta come input la tupla `<indirizzo sorgente, endpoint sorgente, identificatore del cluster, indirizzo destinazione, endpoint destinazione>`.
+	- **Indirizzamento Indiretto:** Il binding è il pilastro su cui si fonda l'**indirizzamento indiretto**. Normalmente, un messaggio viene instradato conoscendo esplicitamente la coppia `<indirizzo di rete, endpoint>` di destinazione (indirizzamento diretto). Tuttavia, l'indirizzamento diretto è inadatto per dispositivi estremamente semplici (constrained) che non hanno memoria per tracciare i destinatari, ed è un problema critico se gli indirizzi di rete cambiano. Con il binding, un dispositivo sorgente pubblica un messaggio specificando solo il proprio Endpoint e il **Cluster ID** associato: sarà poi il router/coordinator del livello APS (sul Coordinatore o sui Router che memorizzano la tabella di binding) a risolvere la transazione traducendola nelle reali coppie `<endpoint di destinazione, indirizzo di rete di destinazione>`.
+
+
+	Perché si usano gli indirizzi fisici a 64-bit? (La logica d'esame)
+
+	Nei Binding, le associazioni logiche tra sorgenti e destinazioni vengono definite e memorizzate all'interno della **Binding Table** utilizzando esclusivamente gli **indirizzi fisici IEEE MAC a 64-bit** (scritti stabilmente nell'hardware) e non gli indirizzi logici a 16-bit.
+
+	**Il motivo ingegneristico è la conservazione dello stato a seguito di disconnessioni:** Nelle reti Zigbee, gli indirizzi di rete a 16-bit (_short addresses_) sono dinamici e volatili. Se un dispositivo si spegne, salta la corrente o si resetta, quando effettua nuovamente il join alla rete (magari associandosi a un padre diverso) riceverà un indirizzo a 16-bit completamente differente da quello precedente.
+
+  Se la tabella di binding utilizzasse gli indirizzi a 16-bit, a ogni reset del dispositivo **tutti i binding ad esso associati andrebbero distrutti**, richiedendo una costosa riconfigurazione manuale della rete.
+  Utilizzando gli indirizzi a 64-bit (che sono statici e immutabili), **il legame logico tra i dispositivi rimane intatto per sempre**, a prescindere da quante volte i dispositivi cambino il loro indirizzo di rete a 16-bit durante il ciclo di vita della rete.
+
+	Poiché il routing dei pacchetti a livello Network deve necessariamente avvenire utilizzando gli indirizzi logici a 16-bit (per ragioni di efficienza e overhead dei frame radio), il livello APS ha bisogno di un "traduttore" che colleghi i 64-bit dei binding ai 16-bit del routing.
+
+	Questo traduttore è l'**APS Address Map Table**, na tabella di transizione memorizzata nel livello APS di ciascun nodo che associa l'indirizzo di rete logico a 16-bit (_NWK Address_) con l'indirizzo fisico globale a 64-bit (_IEEE MAC Address_).
+	 Quando un dispositivo cambia il proprio indirizzo a 16-bit (ad esempio perché si è scollegato e ha eseguito un nuovo join):
+	    1. Il dispositivo invia un **annuncio di rete**  per notificare il suo nuovo indirizzo a 16-bit abbinato al suo MAC fisso a 64-bit.
+	    2. Ogni nodo della rete riceve l'annuncio e aggiorna automaticamente la propria **Address Map Table** locale.
+	    3. In questo modo, la Binding Table (basata su indirizzi a 64-bit) non deve essere modificata, ma il livello APS saprà istantaneamente instradare i messaggi indiretti verso il nuovo indirizzo logico a 16-bit aggiornato
+---
+
+# Duty cycle
+
+
+
+
         
     - **Analisi del Superframe (Immagine: IEEE 802.15.4 - I / Superframe):** Descrivi in dettaglio la struttura del superframe (periodo attivo, inattivo, CAP, CFP). Cosa contiene il beacon frame?
         
-    - Come fa un end-device a ricevere messaggi dal coordinatore?
-        
-- **Binding:** Cosa è un binding? Perché si usano indirizzi a 64-bit? Cos'è l'Address Map? (Immagine: ZigBee V).
+
 ---
 
     
