@@ -133,6 +133,8 @@ I topic che iniziano con il carattere dolalro (come `$SYS/broker/clients/total`)
 	3. **Blackout improvviso:** La lampadina si rompe o salta la corrente. Il Broker non riceve il `PINGREQ` entro il Keep Alive, chiude la sessione e invia automaticamente l'LWT: un messaggio `"OFF"` sul topic `home/devices/lamp1/status`. Tutti i subscriber attivi vengono notificati immediatamente della disconnessione e sanno che la lampadina è ora offline.
 	4. **Consistenza per i Subscriber futuri:** Poiché il testamento era stato configurato con `willRetain = TRUE`, il Broker sovrascrive il precedente stato memorizzato `"ON"` con il nuovo valore `"OFF"`. Quando un nuovo client si collegherà alla rete ore dopo e si sottoscriverà al topic, riceverà immediatamente `"OFF"`, evitando la grave inconsistenza di leggere un obsoleto stato `"ON"` per un dispositivo fisicamente spento o rotto
 ---
+---
+---
 
 # ZIGBEE
 
@@ -391,62 +393,269 @@ I topic che iniziano con il carattere dolalro (come `$SYS/broker/clients/total`)
 	    2. Ogni nodo della rete riceve l'annuncio e aggiorna automaticamente la propria **Address Map Table** locale.
 	    3. In questo modo, la Binding Table (basata su indirizzi a 64-bit) non deve essere modificata, ma il livello APS saprà istantaneamente instradare i messaggi indiretti verso il nuovo indirizzo logico a 16-bit aggiornato
 ---
+---
+---
+
 
 # Duty cycle
+- **Concetto di Duty Cycle:** Cos'è il duty cycle?
+	La progettazione dei dispositivi IoT è fortemente vincolata da limitazioni in termini di elaborazione, memoria, comunicazione e, soprattutto, **autonomia energetica**.
+	Mentre le capacità computazionali dei processori seguono la Legge de Moore raddoppiando le prestazioni o dimezzando i consumi e le dimensioni a parità di costo ogni due anni (nel caso dei micontrollori, puntimao a diminuire le dimensione e i prezzi, poichè non usiamo processori nuovi), **le tecnologie delle batterie (es. Duracell o Li-ion) migliorano in maniera lineare e lento**. Di conseguenza, l'evoluzione hardware da sola non è sufficiente a garantire la sopravvivenza a lungo termine di un nodo sensore; è invece indispensabile implementare **strategie algoritmiche di efficienza energetica** a livello software e di protocollo.
+
+	Analizzando il profilo di consumo energetico tipico di un sensore wireless (_Wireless Sensor Node_), si osserva che la spesa energetica è distribuita approssimativamente tra tre macro-sottosistemi:
+
+	- **Radio (Wireless NIC):** ~40% del consumo totale.
+	- **Processore e Chipset:** ~40% del consumo totale.
+	- **Sensore e convertitore ADC:** ~20% del consumo totale.
+
+	Poiché il lavoro richiesto a un nodo sensore è tipicamente periodico e ripetitivo (composto dalle fasi di **Sensing** → **Processing & Storing** → **Transmit/Receive** → **Sleep**), l'efficienza energetica si ottiene riducendo drasticamente il tempo di attività delle componenti più energivore.
+
+	Si definisce **Duty Cycle (DC)** la frazione del periodo di attività / quello totale
+	
+	All'interno dello stesso dispositivo, **ogni sottosistema ha il proprio duty cycle specifico**. Ad esempio, 
+
+	Il tempo di vita utile del dispositivo, espresso come numero massimo di cicli operativi eseguibili (Lifetime), $(B_0-L)/E_t$
+
+	Dove B0​ è la carica iniziale della batteria ed L rappresenta l'energia persa per autoscarica chimica (_battery leaks_). Poiché le perdite per autoscarica dipendono dal tempo (tipicamente espresse come percentuale annua, es. 3% anno), la carica residua della batteria Bn​ al ciclo n può essere modellata rigorosamente tramite una **equazione alle differenze (ricorrenza)**:
+
+	Bn​=Bn−1​(1−ϵ)−E
+
+	Dove ϵ rappresenta la frazione di carica persa a causa delle perdite interne del buffer durante il tempo di un singolo ciclo.
+
+	La gestione aggressiva del duty cycle (es. scendere a DC<1%) permette effettivamente di estendere la vita della batteria da pochi giorni a diversi mesi. Tuttavia, questa strategia presenta un **limite applicativo invalicabile**:
+
+	1. **Il Trade-off tra Prestazioni e Lifetime (Utilità applicativa):** Ridurre arbitrariamente il duty cycle significa allungare il periodo di sleep e quindi rischiare di ridurre l'utilità del sensore.
+	2. **La disconnessione dalla rete:** Spegnere la radio per lunghi periodi significa isolare il nodo, rendendo complessa la sincronizzazione del network e la ricezione di messaggi di controllo.
+
+	Per raggiungere tempi di dispiegamento (_deployment_) di molti anni o potenzialmente **infiniti**, l'ottimizzazione del Duty Cycle non è più sufficiente. È necessario affiancare a tali politiche l'uso di tecnologie di **Energy Harvesting** (cattura di energia da fonti ambientali come luce solare, vibrazioni o calore), convertendo l'obiettivo di progettazione dalla massimizzazione del tempo di vita al raggiungimento della **Neutralità Energetica (Energy Neutrality)**, ovvero operare in modo tale che l'energia consumata nel ciclo sia sempre inferiore o uguale a quella incamerata dall'ambiente
+---
+- **Calcolo della Lifetime:** Spiega il tempo di vita (lifetime) e come si ottiene.  _Attenzione:_ È estremamente pignolo sulle unità di misura. Puoi usare i _mAh_ o i _Joule_ per l'energia, ma devi motivare il perché. Devi farlo nella formula della lifetime, poiché è data da: `Capacità della Batteria / Energia per ciclo` (ricordati di parlare anche dei "leaks", le dispersioni).
 
 
 
+	A livello di fisica generale, l'energia (E) si misura in **Joule (**J**)** e la potenza (P) in **Watt (**W**)**. Per definizione elettromagnetica, il Joule rappresenta il lavoro compiuto da una corrente di 1 Ampere che attraversa una differenza di potenziale di 1 Volt per la durata di 1 secondo:
 
-        
-    - **Analisi del Superframe (Immagine: IEEE 802.15.4 - I / Superframe):** Descrivi in dettaglio la struttura del superframe (periodo attivo, inattivo, CAP, CFP). Cosa contiene il beacon frame?
-        
+	1 Joule=1 Volt⋅1 Ampere⋅1 secondo=1 W⋅1 s
+
+	Nei circuiti a corrente continua (DC) tipici dei dispositivi IoT, assumiamo che **la differenza di potenziale fornita dalla batteria (**V**) rimanga costante** (o quasi costante) per quasi tutto il periodo di scarica del dispositivo.
+
+	Se il voltaggio V è costante, l'energia consumata dipende linearmente **solo dalla corrente accumulata nel tempo** (ovvero dalla carica elettrica Q):
+
+	E=∫V⋅I(t)dt=V⋅∫I(t)dt=V⋅Q
+
+	Poiché V è costante ed è un fattore comune sia alla capacità della batteria sia al consumo dei singoli componenti, **possiamo omettere la moltiplicazione per la tensione** e descrivere sia la capacità della batteria (B0​) sia l'energia consumata per ciclo (Ecycle​) direttamente in unità di carica elettrica, specificatamente in **milliampere-ora (**mAh**)**.
+
+	- **Conversione matematica formale:** Per convertire una capacità di carica CmAh​ (es. 2000 mAh) in energia equivalente in Joule (EJoule​), dobbiamo moltiplicare la carica in Coulomb (1 mAh=3.6 Coulomb) per la tensione nominale della batteria (V): EJoule​=CmAh​⋅3.6⋅Vnominal​ _Esempio:_ Una batteria da 2000 mAh a 3.7 V nominali immagazzina un'energia pari a: 2000⋅3.6⋅3.7=26.640 Joule
+
+	**Motivazione ingegneristica all'orale:** Esprimere i consumi in mAh evita continue e ridondanti moltiplicazioni per il voltaggio nominale (operazione che introdurrebbe approssimazioni ed errori, dato che la curva di scarica reale di una batteria non è perfettamente piatta ma presenta un lieve decadimento di tensione nel tempo). Inoltre, tutti i datasheet dei componenti IoT specificano l'assorbimento di corrente direttamente in milliampere (mA) o microampere (μA), rendendo i mAh l'unità di misura più naturale e pratica.
+
+	Nel caso ideale, trascurando le perdite interne della batteria, il tempo di vita (espresso in ore) è semplicemente il rapporto tra la capacità totale della batteria e il consumo medio orario del dispositivo:
+
+	Lifetime= B_0/E_t​
+
+
+	Le batterie reali non sono buffer ideali: esse soffrono di autoscarica chimica spontanea (**battery leaks**), che consuma una porzione della carica anche se il dispositivo si trova in sleep profondo. 
+	
+	Lifetime (cicli)=B_0-L/E_t
+
+	Dove L rappresenta la carica totale persa a causa delle dispersioni durante l'intero tempo di funzionamento del dispositivo. Poiché L dipende intrinsecamente dalla durata temporale della stessa lifetime (creando una dipendenza circolare), per calcolare la lifetime reale dobbiamo ricorrere a un'**equazione di ricorrenza (differenze finite)**.
+
+	Definiamo ϵ come la frazione infinitesima di carica persa per autoscarica in un singolo ciclo operativo. La carica residua della batteria al ciclo n (Bn​) è data da:
+
+	Bn​=Bn−1​(1−ϵ)−Ecycle​
+
+	Risolvendo analiticamente questa equazione alle differenze a partire dalla carica iniziale B0​, otteniamo la formula chiusa per determinare lo stato della batteria al ciclo n:
+
+	Bn​=B0​(1−ϵ)n−Ecycle​⋅ϵ1−(1−ϵ)n​
+
+
 
 ---
 
-    
+
+- **Analisi del codice (Immagine: duty cycle - I):** Prendendo in considerazione questo blocco di codice, parla del duty cycle in Arduino. Spiega come funziona l'accensione e lo spegnimento dei componenti e cosa implica questo per il duty cycle. C'è una relazione tra duty cycle ed energia? (Impara la formula a memoria!).  In questo ciclo ci sono molti accensioni e spegnimenti. Perché lo facciamo?
+	
+	1. Funzionamento dell'accensione e spegnimento dei componenti nel codice (`duty cycle - I`)
+
+	Il blocco di codice analizzato implementa una tecnica fondamentale di risparmio energetico nota come **Dynamic Power Gating** (gestione dinamica dell'alimentazione) e **Duty Cycling**. In un sistema IoT constrained, i sensori e i ricetrasmettitori radio consumano una quantità di energia enorme rispetto al microcontrollore.
+
+	Il codice controlla questi componenti in modo estremamente granulare nel `loop()`:
+
+	1. **Accensione e Lettura del Sensore:** La chiamata `turnOn(analogSensor)` alimenta la scheda sensori. Viene eseguita la lettura analogica (`analogRead(A0)`) che dura 15 ms. Subito dopo, il sensore viene spento con `turnOff(analogSensor)` per azzerarne il consumo.
+	2. **Elaborazione Dati:** Il processore esegue la conversione matematica in tensione, operazione che richiede 1 ms. Durante questa fase, la radio e il sensore sono spenti.
+	3. **Accensione e Trasmissione Radio:** La radio viene alimentata tramite `turnOn(radioInterface)`. La trasmissione seriale/radio richiede 4 ms. Subito dopo l'invio, la radio viene spenta con `turnOff(radioInterface)`.
+	4. **Sleep di Sistema:** Infine, la funzione `idle(380)` mette il microcontrollore in uno stato di sleep a basso consumo per 380 ms, spegnendo il clock della CPU e congelando le periferiche non necessarie.
+
+	Il periodo totale di un singolo ciclo loop è: $$T_{total} = 15\text{ ms} + 1\text{ ms} + 4\text{ ms} + 380\text{ ms} = 400\text{ ms} \text{$$$$}$$
 
 
-### 1. Duty Cycle, Energia e Lifetime (Tempo di vita)
+	Il **Duty Cycle (**DC**)** è la frazione di tempo in cui un componente si trova in stato attivo rispetto al periodo totale del ciclo:
 
-- **Concetto di Duty Cycle:** Cos'è il duty cycle?
-    
-- **Analisi del codice (Immagine: duty cycle - I):** Prendendo in considerazione questo blocco di codice, parla del duty cycle in Arduino.
-    
-    - _Cosa dire:_ Spiega come funziona l'accensione e lo spegnimento dei componenti e cosa implica questo per il duty cycle.
-        
-    - _Relazione con l'energia:_ C'è una relazione tra duty cycle ed energia? (Impara la formula a memoria!)
-        
-    - _Power-up/down:_ In questo ciclo ci sono molti accensioni e spegnimenti. Perché lo facciamo?
-        
-- **Protocolli MAC e Duty Cycle:**
-    
-    - **B-MAC (Berkeley MAC):** Come funziona questo protocollo? Spiega il meccanismo di Low Power Listening (LPL) e come aiuta a ridurre il duty cycle e il consumo energetico rispetto ad altri approcci.
-        
+		- **Processor Duty Cycle (**DCproc​**):** Il microcontrollore deve rimanere attivo per coordinare tutte le fasi di sensing, calcolo e trasmissione (15+1+4=20 ms). $$DC_{proc} = \frac{20\text{ ms}}{400\text{ ms}} = \mathbf{5\%} \text{$$$$}$$
+	- **Sensor Duty Cycle (**DCsensor​**):** Il sensore è alimentato solo durante la fase di lettura (15 ms). $$DC_{sensor} = \frac{15\text{ ms}}{400\text{ ms}} = \mathbf{3.75\%} \text{$$$$}$$
+		- **Radio Duty Cycle (**DCradio​**):** La radio viene accesa esclusivamente durante la trasmissione dei dati (4 ms). $$DC_{radio} = \frac{4\text{ ms}}{400\text{ ms}} = \mathbf{1\%} \text{$$$$}$$
+
+
+
+La relazione fisica tra il duty cycle e l'energia consumata è **lineare**. Poiché nei sistemi IoT operiamo a tensione continua e costante (V), il consumo di potenza ed energia dipende unicamente dalla corrente media assorbita (Iavg​).
+
+La formula fondamentale per calcolare la **corrente media (**Iavg​**)** di un componente (o del sistema) in un ciclo è:
+
+$$\mathbf{I_{avg} = I_{active} \cdot DC + I_{sleep} \cdot (1 - DC)} \text{$$$$}$$
+
+Dove:
+
+- Iactive​: Corrente assorbita nello stato attivo.
+- Isleep​: Corrente assorbita in modalità sleep/low-power.
+- DC: Il duty cycle espresso in frazione (0≤DC≤1).
+
+🧮 Calcolo del consumo medio orario del sistema (Dati del Datasheet):
+
+- **Microprocessore (Atmega128L) [**DC=5%**]:** $$I_{proc} = 8\text{ mA} \cdot 0.05 + 0.015\text{ mA} \cdot 0.95 = 0.400 + 0.0142 = \mathbf{0.414\text{ mAh}} \text{$$$$}$$
+- **Radio [**DC=3.75% **(valore slide)]:** $$I_{radio} = 20\text{ mA} \cdot 0.0375 + 0.020\text{ mA} \cdot 0.9625 = 0.750 + 0.0192 = \mathbf{0.769\text{ mAh}} \text{$$$$}$$
+- **Sensore [**DC=1% **(valore slide)]:** $$I_{sens} = 5\text{ mA} \cdot 0.01 + 0.005\text{ mA} \cdot 0.99 = 0.050 + 0.0049 = \mathbf{0.055\text{ mAh}} \text{$$$$}$$
+- **Consumo Totale Orario:** $I_{tot} = 0.414 + 0.769 + 0.055 = \mathbf{1.243\text{ mAh}} \text{$$}$
+- **Lifetime** (con batteria da 2000 mAh, senza leak): $$\text{Lifetime} = \frac{2000\text{ mAh}}{1.243\text{ mAh}} \approx \mathbf{1609\text{ ore}} \text{ (circa 67 giorni)} \text{$$$$}$$
+
+
+	Questo approccio aggressivo prende il nome di **Dynamic Power Management**. Lo facciamo perché la differenza nei consumi di corrente tra lo stato attivo e lo stato di sleep è di **3 ordini di grandezza (1000 volte)**:
+
+	- La radio consuma 17.4−20 mA quando trasmette, ma appena 20 μA in sleep.
+	- La scheda sensori consuma 5 mA attiva e solo 5 μA in sleep.
+
+	Se lasciassimo i componenti costantemente accesi (Duty Cycle a 100%), il consumo medio sarebbe pari alla somma dei consumi attivi (8 mA+20 mA+5 mA=33 mA), scaricando la batteria in appena **60 ore** (meno di 3 giorni). Spegnendo i componenti nei millisecondi in cui non servono e addormentando il microcontrollore in `idle(380)`, abbattiamo lo spreco energetico e aumentiamo l'autonomia del dispositivo di oltre **25 volte
+
+---
+
 - **Stati del Processore:** Qual è la differenza tra _idle_ e _delay_ nel processore?
-    
-- **Librerie & Hardware:** Cosa fanno le funzioni nella libreria `lowbattery.h`? Come si riaccende il microprocessore, qual è il meccanismo? (Risposta: tramite un timer o un interrupt esterno).
-    
-- **Calcolo della Lifetime:** Spiega il tempo di vita (lifetime) e come si ottiene.
-    
-    - _Attenzione:_ È estremamente pignolo sulle unità di misura. Puoi usare i _mAh_ o i _Joule_ per l'energia, ma devi motivare il perché. Devi farlo nella formula della lifetime, poiché è data da: `Capacità della Batteria / Energia per ciclo` (ricordati di parlare anche dei "leaks", le dispersioni).
-        
+	La differenza fondamentale tra lo stato di **idle** (o modalità sleep Idle) e la funzione di **delay** risiede nello **stato dei clock interni della CPU** e, di conseguenza, nel **consumo di corrente** del microcontrollore:
 
-### 2. Arduino & Interrupts
+
+	La funzione `delay(ms)` nativa di Arduino è una chiamata bloccante che implementa un meccanismo di **attesa attiva** (_busy-waiting_).
+
+	- **Cosa fa l'hardware:** Durante un `delay()`, il core della CPU rimane pienamente attivo. Il clock principale (CLKCPU​) e il clock della memoria flash (CLKFLASH​) continuano a oscillare alla massima frequenza (es. 16 MHz). La CPU non si riposa, ma esegue costantemente un ciclo infinito di istruzioni assembly fittizie (_NOP_ o decrementi di un contatore) per far passare il tempo richiesto.
+	- **Impatto energetico:** Il consumo di corrente rimane al suo valore nominale massimo. 
+	- **Impatto sul Duty Cycle:** Poiché il processore esegue istruzioni per tutto il tempo dell'attesa, il suo **Processor Duty Cycle (**DCproc​**)** effettivo rimane fisso al **100%**, azzerando qualsiasi possibilità di risparmio energetico.
+
+
+	La funzione `idle(ms)` (messa a disposizione da librerie di risparmio energetico come `LowPower.h`) o l'istruzione assembly `sleep` configurata in modalità Idle, mettono il processore in uno **stato di riposo parziale gestito dall'hardware**.
+
+	- **Cosa fa l'hardware:** Quando viene invocata la modalità Idle, il circuito di Power Management del microcontrollore **arresta immediatamente il clock della CPU (**CLKCPU​**)** e il clock della memoria Flash (CLKFLASH​). L'esecuzione delle istruzioni nel core si ferma completamente. Tuttavia, le periferiche hardware di supporto (come i Timer interni, la seriale USART, l'interfaccia SPI e il Watchdog) rimangono alimentate e attive. Il processore si risveglierà automaticamente allo scadere di un timer interno o al sopraggiungere di un interrupt esterno.
+	- **Impatto sul Duty Cycle:** L'uso di `idle()` permette di implementare un vero **Duty Cycling**. Il tempo trascorso in idle viene considerato tempo di inattività (Tinactive​), permettendo di abbassare il duty cycle del processore (es. al 5%) e moltiplicando la vita utile della batteria del dispositivo
+
+---
+---
+---
+
+
+# MAC Protocol
+
+- **B-MAC (Berkeley MAC):** Come funziona questo protocollo? Spiega il meccanismo di Low Power Listening (LPL) e come aiuta a ridurre il duty cycle e il consumo energetico rispetto ad altri approcci.
+	l protocollo **B-MAC (Berkeley MAC)** è un protocollo di controllo dell'accesso al mezzo (MAC) asincrono, in modalità beacon-enabled, **B-MAC non richiede alcuna sincronizzazione temporale esplicita tra i nodi della rete**. Usa un solo parametro il tempo di wakeup
+
+	Il suo principio di funzionamento si basa interamente sul paradigma del **Preamble Sampling** (campionamento del preambolo) mediante la tecnica del **Low-Power Listening (LPL)**.
+		- Il ricevitore trascorre la maggior parte del tempo in uno stato di sleep profondo per preservare la batteria.
+		- Ad intervalli regolari e periodici (definiti dall'intervallo di controllo Tsleep​ o _check interval_), il ricevitore si sveglia brevemente ed esegue un'operazione di **Preamble Sampling** (campionamento del canale).
+		- Questa attività di ascolto (LPL) è estremamente rapida ed economica (dura frazioni di millisecondo): il nodo accende la radio, effettua un controllo di presenza di segnale
+		    1. **Se non rileva attività:** spegne immediatamente la radio e torna in sleep.
+		    2. **Se rileva un preambolo attivo:** mantiene la radio accesa in modalità di ascolto continuo (_Listen mode_) fino al termine del preambolo, per poi ricevere e decodificare il pacchetto dati vero e proprio.
+		
+	Poiché i nodi non sono sincronizzati, il trasmettitore può decidere di inviare un pacchetto in qualsiasi momento, senza attendere una finestra temporale specifica (trasmissione _on-demand_).
+    Per assicurarsi che il destinatario intercetti la trasmissione durante uno dei suoi risvegli periodici, il trasmettitore precede il pacchetto dati vero e proprio con un **preambolo radio estremamente lungo**.
+
+	Affinché il protocollo funzioni in modo affidabile senza perdita di pacchetti, la durata temporale del preambolo (Tpreamble​) deve essere strettamente maggiore del periodo di sleep del ricevitore (Tsleep​):
+
+	Tpreamble​>Tsleep​
+
+	Se questa condizione non fosse soddisfatta, il ricevitore potrebbe svegliarsi, campionare il canale durante un momento di silenzio tra un preambolo e l'altro, e tornare a dormire perdendo completamente la successiva trasmissione dati.
+	
+	Rispetto ad approcci sincroni (come S-MAC), B-MAC offre vantaggi energetici e architetturali straordinari, pur accettando precisi trade-off:
+
+	Zero Overhead di Sincronizzazione (Differenza con S-MAC)
+	In protocolli come **S-MAC**, i nodi devono scambiarsi periodicamente pacchetti di sincronizzazione (**SYNC frames**) per allineare le proprie finestre di attività (ascolto/sleep).
+
+	- **Il problema di S-MAC:** Questo continuo scambio di messaggi di controllo genera un overhead di traffico radio non trascurabile che consuma costantemente energia, anche quando non ci sono dati applicativi da trasmettere. Inoltre, richiede risorse di memoria per tracciare le tabelle delle pianificazioni (_schedules_) dei vicini.
+	- **La soluzione di B-MAC:** Non essendoci sincronizzazione, **l'overhead di controllo di B-MAC è esattamente pari a zero**. I nodi non devono scambiarsi alcun SYNC frame né mantenere tabelle di vicinato, massimizzando il risparmio energetico in scenari a bassissimo traffico (es. 1 campione ogni 10-20 minuti).
+		
+	Il duty cycle legato all'attività di monitoraggio dell'etere da parte del ricevitore è infinitesimo.
+	
+	**Il costo energetico del trasmettitore:** Per consentire al ricevitore di dormire a lungo (es. Tsleep​=1 s), il trasmettitore deve inviare un preambolo lunghissimo e costoso (1 s di trasmissione alla massima potenza).
+  ** Il problema dell'Overhearing:** Quando un trasmettitore invia un lungo preambolo, **tutti nodi nel raggio radio** che eseguono il sampling si sveglieranno e rimarranno attivi in ascolto per tutta la durata del preambolo, per poi scoprire (solo all'arrivo dell'header del pacchetto dati) che il messaggio non era indirizzato a loro, sprecando enormi quantità di energia.
+
+	- **X-MAC:** Risolve il problema frammentando il lungo preambolo continuo in una serie di **brevi preamboli intermittenti contenenti l'ID del destinatario**. Se il ricevitore si sveglia e riconosce il proprio ID nel breve preambolo, invia immediatamente un **Early ACK** (ACK anticipato) per interrompere la trasmissione del preambolo e forzare il mittente a inviare subito il pacchetto dati, risparmiando tempo ed energia su entrambi i lati.
+	- **BoX-MAC:** Evoluzione ulteriore in cui il preambolo stesso non è una stringa fittizia, ma è la **ripetizione continua del pacchetto dati stesso**. Il ricevitore si sveglia, decodifica direttamente il pacchetto applicativo, invia un ACK per spegnere il trasmettitore e conclude istantaneamente la transazione
+---
+---
+---
+
+
+# IEEE 802.15.4
+    - **Analisi del Superframe (Immagine: IEEE 802.15.4 - I / Superframe):** Descrivi in dettaglio la struttura del superframe (periodo attivo, inattivo, CAP, CFP). Cosa contiene il beacon frame?
+----
+---
+---
+
+# Arduino
+
+- **Librerie & Hardware:** Cosa fanno le funzioni nella libreria `lowpower.h`? Come si riaccende il microprocessore, qual è il meccanismo? (Risposta: tramite un timer o un interrupt esterno).
+	
+	Le funzioni principali della libreria (come `LowPower.idle()` e `LowPower.powerDown()`) hanno il compito di **transire il microcontrollore in uno stato di sleep a bassissimo consumo**.
+	
+
+	1. **Arresto dei Clock di Sistema:** Spengono selettivamente le sorgenti di clock del microcontrollore. Nella modalità **Idle**, viene arrestato il clock della CPU (CLKCPU​) e della memoria Flash (CLKFLASH​), mantenendo attivi i clock delle periferiche. Nella modalità **Power-Down** (la più aggressiva), vengono spenti tutti i clock interni e l'oscillatore esterno a cristallo, congelando l'intero chip.
+	2. **Disattivazione selettiva delle Periferiche:** Permettono di passare argomenti specifici per spegnere moduli hardware interni che consumerebbero corrente anche in sleep. I parametri principali sono:
+	    - `ADC_OFF`: Spegne il convertitore Analogico-Digitale.
+	    - `BOD_OFF`: Spegne il circuito di _Brown-Out Detection_ (il modulo che monitora cali di tensione, che da solo assorbe circa 15 μA).
+	    - `TIMERx_OFF`, `SPI_OFF`, `USART0_OFF`, `TWI_OFF`: Disattivano rispettivamente i timer interni, l'interfaccia SPI, la porta seriale UART e il bus I2C.
+	3. **Configurazione del Tempo di Sleep:** Accettano costanti temporali predefinite per determinare la durata dello stato di sleep (es. `SLEEP_15MS`, `SLEEP_2S`, `SLEEP_8S` o la costante speciale `SLEEP_FOREVER` per uno sleep indefinito).
+
+	Il microcontrollore non può riaccendersi da solo eseguendo codice, il risveglio (wake-up) avviene **esclusivamente a livello hardware tramite un segnale di Interrupt** che riattiva la generazione dei clock interni.
+
+
+	 Risveglio tramite Timer Interno (Watchdog Timer - WDT)
+
+	Quando chiamiamo una funzione impostando un tempo definito (es. `LowPower.powerDown(SLEEP_8S, ...)`), il microcontrollore sfrutta il **Watchdog Timer**.
+
+	- **Il Meccanismo:** Il Watchdog è un timer hardware asincrono che funziona con un oscillatore interno separato da quello della CPU. Durante lo sleep, mentre tutto il resto è spento, il Watchdog continua a contare.
+	- **Il Risveglio:** Al raggiungimento del timeout impostato (overflow), il Watchdog genera un **interrupt interno**. Questo interrupt hardware risveglia il circuito di Power Management, il quale riattiva l'oscillatore principale (fase di stabilizzazione del clock) e fornisce nuovamente il segnale di clock alla CPU, facendola ripartire.
+
+	 Risveglio tramite Interrupt Esterno
+
+	Quando il dispositivo viene addormentato senza un limite di tempo impostando il parametro **SLEEP_FOREVER**, il Watchdog viene disattivato. L'unico modo per ridare vita al microcontrollore è applicare un segnale elettrico dall'esterno.
+
+	- **Il Meccanismo:** Prima di invocare lo sleep, il software deve abilitare un interrupt hardware esterno su uno dei pin dedicati di Arduino (es. INT0 sul pin 2, configurato con `attachInterrupt(0, wakeUp, LOW)`).
+	- **Il Risveglio:** Quando un evento fisico reale (come la pressione di un pulsante o il segnale di un sensore di presenza) porta il pin 2 a livello logico **LOW**, l'hardware del microcontrollore rileva asincronamente la variazione di stato. Questa transizione genera istantaneamente un **interrupt esterno**. Il circuito di controllo riaccende immediatamente i clock di sistema, la CPU si risveglia, esegue la routine di servizio dell'interrupt (`wakeUp()`) e poi riprende l'esecuzione del codice applicativo esattamente dall'istruzione successiva a quella che aveva avviato lo sleep.
+---
+---
+---
 
 - **Analisi del codice (Immagine: Arduino - interrupt):** Commenta il codice dicendo cosa fanno i vari comandi.
-    
+
+
+---
+
 - **Esecuzione e Vincoli:** Quando viene eseguito l'interrupt handler (ISR)? Cosa è permesso fare agli interrupt e perché? (Risposta: non devono interferire con l'esecuzione normale e devono essere estremamente brevi).
-    
+---
+
 - **La keyword volatile:** A cosa serve `volatile`? Perché è necessario e perché il valore non sarebbe consistente altrimenti?
     
     - _Risposta:_ Per via dell'ottimizzazione del compilatore, il valore di una variabile potrebbe essere scritto in un registro locale invece che nella memoria RAM. Alla fine dell'interrupt, i valori dei registri tornano allo stato precedente, perdendo la modifica. `volatile` forza il compilatore a leggere/scrivere sempre direttamente in memoria.
         
-
-### 5. Energy Harvesting & Gestione della Batteria
+----
+---
+---
+# Energy Harvesting & Gestione della Batteria
 
 - **Schema Harvest-Store-Use:** Spiega l'immagine dell'Energy Harvesting con il grafico della potenza immagazzinata e consumata.
+
+---
+
     
 - **Significato degli integrali (Immagine: 3 integrali):** L'integrale della potenza in ingresso (harvested) nel tempo rappresenta l'energia totale raccolta, mentre l'integrale della potenza in uscita (used/leaked) rappresenta l'energia consumata. Per mantenere il sistema vivo (neutralità energetica), l'integrale dell'energia raccolta deve essere maggiore o uguale a quello dell'energia consumata, tenendo conto delle perdite.
+
+---
+
+
     
 - **Caratteristiche dei Buffer:** Spiega e discuti le caratteristiche di un buffer (batteria/supercondensatore):
     
@@ -458,11 +667,15 @@ I topic che iniziano con il carattere dolalro (come `$SYS/broker/clients/total`)
         
     
     - _Qual è la più importante a livello progettuale?_ Dipende dall'applicazione, ma nei sistemi WSN/IoT a lunghissimo termine, il **Leakage** e l'**Efficienza** sono spesso i fattori più critici.
-        
-- **Modelli di Energy Harvesting:**
+
+---
+
     
-    - **Modello di Kansal:** Come viene definita la neutralità energetica (energy neutrality)? Spiega il suo algoritmo per il duty cycling dinamico e introduci il concetto di _utility_ in questo contesto.
-        
-    - **Modello Task-based:** In cosa consiste l'approccio basato sui task per la gestione dell'energia?
-        
-    - **Confronto:** Quali sono le differenze principali e i compromessi tra il Task-based model e il modello di Kansal?
+- **Modello di Kansal:** Come viene definita la neutralità energetica (energy neutrality)? Spiega il suo algoritmo per il duty cycling dinamico e introduci il concetto di _utility_ in questo contesto.
+
+---
+
+- **Modello Task-based:** In cosa consiste l'approccio basato sui task per la gestione dell'energia?
+---
+
+ - **Confronto:** Quali sono le differenze principali e i compromessi tra il Task-based model e il modello di Kansal?
